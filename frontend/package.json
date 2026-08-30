@@ -1,0 +1,40 @@
+{
+  "name": "atavismo-frontend",
+  "description": "Svelte frontend for Atavismo",
+  "type": "module",
+  "scripts": {
+    "clean": "rimraf dist node_modules",
+    "dev": "run-script-os",
+    "dev:default": "NODE_ENV=development && vite",
+    "dev:win32": "set NODE_ENV=development && vite",
+    "build": "npm run lint && vite build && node scripts/parsePath.js dist/index.html && rimraf ../backend/src/client/ && npm run copy-client",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "copy-client": "run-script-os",
+    "copy-client:default": "mkdir -p ../backend/src/client && cp -rf dist/* ../backend/src/client/",
+    "copy-client:win32": "xcopy dist\\* ..\\backend\\src\\client\\ /e /i /h",
+    "lint": "npm run check && eslint --ext .js,.ts,.svelte src"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.0.2",
+    "@sveltestrap/sveltestrap": "^6.2.7",
+    "@tsconfig/svelte": "^5.0.4",
+    "eslint": "^8.57.0",
+    "eslint-config-standard-with-typescript": "^43.0.1",
+    "eslint-plugin-svelte": "^2.35.1",
+    "rimraf": "^5.0.5",
+    "run-script-os": "^1.1.6",
+    "sass": "^1.74.1",
+    "svelte": "^4.2.12",
+    "svelte-check": "^3.6.9",
+    "svelte-i18n": "^4.0.0",
+    "tslib": "^2.6.2",
+    "typescript": "^5.4.4",
+    "vite": "^5.2.8"
+  },
+  "lint-staged": {
+    "*.{ts,js,svelte}": [
+      "npx eslint --fix"
+    ]
+  }
+}

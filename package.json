@@ -1,0 +1,48 @@
+{
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "clean": "rimraf dist && cd backend && npm run clean && cd ../frontend && npm run clean",
+    "start": "concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm run dev\"",
+    "build": "npm run build:frontend && npm run build:backend",
+    "test": "cd backend && npm run test",
+    "test:dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run test:dev\"",
+    "test-ui": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run test-ui\"",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run compile",
+    "package": "npm run build:frontend && cd backend && npm run package",
+    "make": "npm run build:frontend && cd backend && npm run make",
+    "preinstall": "cd backend && npm ci && cd ../frontend && npm ci",
+    "postinstall": "npx husky",
+    "lint": "cd backend && npm run lint && cd ../frontend && npm run lint",
+    "prepare": "husky"
+  },
+  "name": "atavismo",
+  "description": "Cross-platform desktop GEDCOM viewer and genealogy explorer built with Electron and Svelte",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/planetsLightningArrester/atavismo.git"
+  },
+  "keywords": [
+    "electron",
+    "svelte",
+    "gedcom",
+    "genealogy",
+    "family-tree"
+  ],
+  "author": "Planet's Lightning Arrester",
+  "license": "GNU GPLv3",
+  "bugs": {
+    "url": "https://github.com/planetsLightningArrester/atavismo/issues"
+  },
+  "homepage": "https://github.com/planetsLightningArrester/atavismo#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.3",
+    "@commitlint/config-conventional": "^19.0.3",
+    "concurrently": "^8.2.2",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.0",
+    "rimraf": "^5.0.5"
+  }
+}
