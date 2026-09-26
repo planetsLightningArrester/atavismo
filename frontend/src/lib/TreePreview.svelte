@@ -1,4 +1,6 @@
 <script lang="ts">
+  import '../i18n'
+  import { _ } from 'svelte-i18n'
   import { cleanName, formatLifespan } from './common'
 
   export let individuals: Individual[] = []
@@ -91,13 +93,13 @@
             goBack()
           }}
         >
-          ← Back
+          ← {$_('family_tree.back')}
         </button>
       {/if}
-      <span class="active-label">Focusing: <b>{cleanName(currentPerson?.name)}</b> ({currentPerson?.id})</span>
+      <span class="active-label">{$_('family_tree.focusing')}: <b>{cleanName(currentPerson?.name)}</b> ({currentPerson?.id})</span>
     </div>
     <div class="toolbar-right">
-      <span class="badge-tag">Interactive Pedigree View</span>
+      <span class="badge-tag">{$_('family_tree.interactive_pedigree_view')}</span>
     </div>
   </div>
 
@@ -105,10 +107,10 @@
     <div class="tree-canvas">
       <!-- 1. Parents Tier -->
       <div class="tree-tier parents-tier">
-        <div class="tier-label">PARENTS</div>
+        <div class="tier-label">{$_('family_tree.parents')}</div>
         <div class="cards-row">
           {#if parents.length === 0}
-            <div class="empty-node-card">No parents recorded</div>
+            <div class="empty-node-card">{$_('family_tree.no_parents_recorded')}</div>
           {:else}
             {#each parents as parent}
               <button
@@ -135,11 +137,11 @@
 
       <!-- 2. Central Person + Spouses Tier -->
       <div class="tree-tier focus-tier">
-        <div class="tier-label">CURRENT INDIVIDUAL & SPOUSES</div>
+        <div class="tier-label">{$_('family_tree.current_individual_and_spouses')}</div>
         <div class="cards-row focus-row">
           <!-- Primary Focus Person -->
           <div class="node-card focus-card" class:male={currentPerson.sex === 'M'} class:female={currentPerson.sex === 'F'}>
-            <div class="focus-badge">PRIMARY FOCUS</div>
+            <div class="focus-badge">{$_('family_tree.primary_focus')}</div>
             <div class="node-icon large">{currentPerson.sex === 'M' ? '♂' : currentPerson.sex === 'F' ? '♀' : '👤'}</div>
             <div class="node-info">
               <div class="node-name title-name">{cleanName(currentPerson.name)}</div>
@@ -170,7 +172,7 @@
                   <div class="node-name">{cleanName(unit.spouse.name)}</div>
                   <div class="node-lifespan">{formatLifespan(unit.spouse.birth, unit.spouse.death)}</div>
                   {#if typeof unit.fam.marriage?.date === 'string' && unit.fam.marriage.date.length > 0}
-                    <div class="node-meta">Married: {unit.fam.marriage.date}</div>
+                    <div class="node-meta">{$_('family_tree.married')}: {unit.fam.marriage.date}</div>
                   {/if}
                 </div>
               </button>
@@ -183,7 +185,7 @@
 
       <!-- 3. Children Tier -->
       <div class="tree-tier children-tier">
-        <div class="tier-label">CHILDREN</div>
+        <div class="tier-label">{$_('family_tree.children')}</div>
         <div class="cards-row wrap-row">
           {#if allChildren.length === 0}
             <div class="empty-node-card">No children recorded in family units</div>

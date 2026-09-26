@@ -46,5 +46,40 @@
     "github_page": "Repositório GitHub",
     "loaded_records": "Registros Carregados",
     "powered_by": "Motor de leitura sem dependências externas"
+  },
+  "family_tree": {
+    "back": "Voltar",
+    "focusing": "Em foco",
+    "no_parents_recorded": "Nenhum genitor registrado",
+    "current_individual_and_spouses": "INDIVÍDUO ATUAL E CÔNJUGES",
+    "parents": "PAIS",
+    "children": "FILHOS",
+    "interactive_pedigree_view": "Visualização Interativa de Linhagem",
+    "primary_focus": "FOCO PRINCIPAL",
+    "married": "Casamento"
+  },
+  "tree_overview": {
+    "summary": "Carregados com sucesso <b>{individuals_amount} indivíduos</b> agrupados em <b>{families_amount} famílias</b> abrangendo <b>{generations_amount} gerações</b>",
+    "explore_family_tree": "Explorar Árvore Genealógica",
+    "browse_all_records": "Navegar por Todos os Registros ({records_amount})"
+  },
+  "dataset_metadata": {
+    "software_source": "Software de Origem",
+    "software_version": "Versão do Software",
+    "gedcom_standard": "Padrão GEDCOM",
+    "character_encoding": "Codificação de Caracteres",
+    "submitter": "Remetente"
+  },
+  "records": {
+    "name": "Nome",
+    "sex": "Sexo",
+    "events": "Eventos",
+    "spouse": "Cônjuge",
+    "children": "Filhos"
+  },
+  "raw_data": {
+    "raw_gedcom_dataset": "Conjunto de Dados GEDCOM Bruto",
+    "default_text": "Carregado a partir do disco/conjunto de dados de exemplo sem retenção do texto bruto na memória."
   }
 }
+

@@ -46,5 +46,39 @@
     "github_page": "GitHub Repository",
     "loaded_records": "Records Loaded",
     "powered_by": "Zero-dependency parser engine"
+  },
+  "family_tree": {
+    "back": "Back",
+    "focusing": "Focusing",
+    "no_parents_recorded": "No parents recorded",
+    "current_individual_and_spouses": "CURRENT INDIVIDUAL & SPOUSES",
+    "parents": "PARENTS",
+    "children": "CHILDREN",
+    "interactive_pedigree_view": "Interactive Pedigree View",
+    "primary_focus": "PRIMARY FOCUS",
+    "married": "Married"
+  },
+  "tree_overview": {
+    "summary": "Successfully loaded <b>{individuals_amount} individuals</b> grouped into <b>{families_amount} families</b> spanning <b>{generations_amount} generations</b>",
+    "explore_family_tree": "Explore Family Tree",
+    "browse_all_records": "Browse All Records ({records_amount})"
+  },
+  "dataset_metadata": {
+    "software_source": "Software Source",
+    "software_version": "Software Version",
+    "gedcom_standard": "GEDCOM Standard",
+    "character_encoding": "Character Encoding",
+    "submitter": "Submitter"
+  },
+  "records": {
+    "name": "Name",
+    "sex": "Sex",
+    "events": "Events",
+    "spouse": "Spouse",
+    "children": "Children"
+  },
+  "raw_data": {
+    "raw_gedcom_dataset": "Raw GEDCOM Dataset",
+    "default_text": "Loaded from disk/sample dataset without raw string retention in memory."
   }
 }

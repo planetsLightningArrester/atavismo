@@ -215,8 +215,11 @@
               <div class="pane-card">
                 <h3 class="pane-title">🌲 Tree Overview</h3>
                 <p class="pane-description">
-                  Successfully loaded <b>{gedcomData.individuals.length} individuals</b> grouped into
-                  <b>{gedcomData.families.length} families</b> spanning <b>{gedcomData.stats.generationCount} generations</b>.
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                  {@html $_({
+                    id: 'tree_overview.summary',
+                    values: { individuals_amount: gedcomData.individuals.length, families_amount: gedcomData.families.length, generations_amount: gedcomData.stats.generationCount },
+                  })}
                 </p>
                 <div class="quick-nav-actions">
                   <button
@@ -225,7 +228,7 @@
                       activeTab = 'tree'
                     }}
                   >
-                    Explore Family Tree →
+                    {$_('tree_overview.explore_family_tree')} →
                   </button>
                   <button
                     class="nav-pill-btn"
@@ -233,7 +236,7 @@
                       activeTab = 'records'
                     }}
                   >
-                    Browse All Records ({gedcomData.individuals.length}) →
+                    {$_({ id: 'tree_overview.browse_all_records', values: { records_amount: gedcomData.individuals.length } })} →
                   </button>
                 </div>
               </div>
@@ -241,11 +244,11 @@
               <div class="pane-card">
                 <h3 class="pane-title">📋 Dataset Metadata</h3>
                 <ul class="meta-list">
-                  <li><span class="meta-key">Software Source:</span> {gedcomData.metadata.source ?? 'Unknown'}</li>
-                  <li><span class="meta-key">Software Version:</span> {gedcomData.metadata.version ?? '—'}</li>
-                  <li><span class="meta-key">GEDCOM Standard:</span> {gedcomData.metadata.atavismVersion ?? '5.5.1'}</li>
-                  <li><span class="meta-key">Character Encoding:</span> {gedcomData.metadata.encoding ?? 'UTF-8'}</li>
-                  <li><span class="meta-key">Submitter:</span> {gedcomData.metadata.submitter ?? '—'}</li>
+                  <li><span class="meta-key">{$_('dataset_metadata.software_source')}:</span> {gedcomData.metadata.source ?? 'Unknown'}</li>
+                  <li><span class="meta-key">{$_('dataset_metadata.software_version')}:</span> {gedcomData.metadata.version ?? '—'}</li>
+                  <li><span class="meta-key">{$_('dataset_metadata.gedcom_standard')}:</span> {gedcomData.metadata.atavismVersion ?? '5.5.1'}</li>
+                  <li><span class="meta-key">{$_('dataset_metadata.character_encoding')}:</span> {gedcomData.metadata.encoding ?? 'UTF-8'}</li>
+                  <li><span class="meta-key">{$_('dataset_metadata.submitter')}:</span> {gedcomData.metadata.submitter ?? '—'}</li>
                 </ul>
               </div>
             </div>
@@ -264,8 +267,8 @@
         {:else if activeTab === 'raw'}
           <div class="tab-pane raw-pane">
             <div class="raw-card">
-              <h3 class="pane-title">Raw GEDCOM Dataset</h3>
-              <pre class="raw-pre"><code>{rawText.length > 0 ? rawText : 'Loaded from disk/sample dataset without raw string retention in memory.'}</code></pre>
+              <h3 class="pane-title">{$_('raw_data.raw_gedcom_dataset')}</h3>
+              <pre class="raw-pre"><code>{rawText.length > 0 ? rawText : $_('raw_data.default_text')}</code></pre>
             </div>
           </div>
         {/if}
@@ -470,6 +473,7 @@
     cursor: pointer;
     transition: background 0.2s ease;
     display: inline-block;
+    align-content: center;
   }
 
   .file-upload-btn:hover {

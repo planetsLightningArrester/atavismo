@@ -44,13 +44,7 @@
   <div class="controls-bar">
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input
-        type="text"
-        placeholder={$_('main_page.search_placeholder')}
-        bind:value={searchQuery}
-        class="search-input"
-        data-testid="search-records-input"
-      />
+      <input type="text" placeholder={$_('main_page.search_placeholder')} bind:value={searchQuery} class="search-input" data-testid="search-records-input" />
       {#if searchQuery.length > 0}
         <button
           class="clear-btn"
@@ -101,8 +95,8 @@
         <thead>
           <tr>
             <th style="width: 70px">ID</th>
-            <th>Name</th>
-            <th style="width: 50px">Sex</th>
+            <th>{$_('records.name')}</th>
+            <th style="width: 50px">{$_('records.sex')}</th>
             <th>{$_('main_page.birth')}</th>
             <th>{$_('main_page.death')}</th>
           </tr>
@@ -179,7 +173,7 @@
           </div>
 
           <div class="inspector-section">
-            <div class="section-heading">Events</div>
+            <div class="section-heading">{$_('records.events')}</div>
             <div class="event-item">
               <span class="event-label">{$_('main_page.birth')}:</span>
               <span>{selectedPerson.birth?.date ?? '—'} {typeof selectedPerson.birth?.place === 'string' && selectedPerson.birth.place.length > 0 ? `(${selectedPerson.birth.place})` : ''}</span>
@@ -236,7 +230,7 @@
                     {#if getSpouse(fam, selectedPerson.id) !== undefined}
                       {@const spouse = getSpouse(fam, selectedPerson.id)}
                       <div class="spouse-box">
-                        <span class="role-tag">💍 Spouse:</span>
+                        <span class="role-tag">💍 {$_('records.spouse')}:</span>
                         <button
                           class="link-btn inline"
                           on:click={() => {
@@ -250,7 +244,7 @@
 
                     {#if fam.childrenIds.length > 0}
                       <div class="children-list">
-                        <span class="role-tag">👶 Children ({fam.childrenIds.length}):</span>
+                        <span class="role-tag">👶 {$_('records.children')} ({fam.childrenIds.length}):</span>
                         {#each fam.childrenIds as childId}
                           {@const ch = indiMap.get(childId)}
                           <button
@@ -259,7 +253,8 @@
                               selectPerson(childId)
                             }}
                           >
-                            {ch?.sex === 'M' ? '👦' : '👧'} {cleanName(ch?.name)} <small>{formatLifespan(ch?.birth, ch?.death)}</small>
+                            {ch?.sex === 'M' ? '👦' : '👧'}
+                            {cleanName(ch?.name)} <small>{formatLifespan(ch?.birth, ch?.death)}</small>
                           </button>
                         {/each}
                       </div>

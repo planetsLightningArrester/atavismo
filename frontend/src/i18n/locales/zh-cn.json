@@ -46,5 +46,40 @@
     "github_page": "GitHub 仓库",
     "loaded_records": "已载入记录数",
     "powered_by": "零外部依赖解析引擎"
+  },
+  "family_tree": {
+    "back": "返回",
+    "focusing": "当前焦点",
+    "no_parents_recorded": "未记录父母",
+    "current_individual_and_spouses": "当前人物与配偶",
+    "parents": "父母",
+    "children": "子女",
+    "interactive_pedigree_view": "交互式系谱视图",
+    "primary_focus": "主要焦点",
+    "married": "结婚"
+  },
+  "tree_overview": {
+    "summary": "已成功加载 <b>{individuals_amount} 位人物</b>，归入 <b>{families_amount} 个家庭</b>，跨越 <b>{generations_amount} 个世代</b>",
+    "explore_family_tree": "探索家谱树",
+    "browse_all_records": "浏览所有记录 ({records_amount})"
+  },
+  "dataset_metadata": {
+    "software_source": "来源软件",
+    "software_version": "软件版本",
+    "gedcom_standard": "GEDCOM 标准",
+    "character_encoding": "字符编码",
+    "submitter": "提交者"
+  },
+  "records": {
+    "name": "姓名",
+    "sex": "性别",
+    "events": "事件",
+    "spouse": "配偶",
+    "children": "子女"
+  },
+  "raw_data": {
+    "raw_gedcom_dataset": "原始 GEDCOM 数据集",
+    "default_text": "已从磁盘/示例数据集加载，未在内存中保留原始文本。"
   }
 }
+

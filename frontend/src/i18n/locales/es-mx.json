@@ -46,5 +46,40 @@
     "github_page": "Repositorio GitHub",
     "loaded_records": "Registros Cargados",
     "powered_by": "Motor de análisis sin dependencias externas"
+  },
+  "family_tree": {
+    "back": "Volver",
+    "focusing": "En foco",
+    "no_parents_recorded": "Sin padres registrados",
+    "current_individual_and_spouses": "INDIVIDUO ACTUAL Y CÓNYUGES",
+    "parents": "PADRES",
+    "children": "HIJOS",
+    "interactive_pedigree_view": "Vista Interactiva de Linaje",
+    "primary_focus": "FOCO PRINCIPAL",
+    "married": "Matrimonio"
+  },
+  "tree_overview": {
+    "summary": "Se cargaron con éxito <b>{individuals_amount} individuos</b> agrupados en <b>{families_amount} familias</b> a lo largo de <b>{generations_amount} generaciones</b>",
+    "explore_family_tree": "Explorar Árbol Genealógico",
+    "browse_all_records": "Navegar por Todos los Registros ({records_amount})"
+  },
+  "dataset_metadata": {
+    "software_source": "Software de Origen",
+    "software_version": "Versión del Software",
+    "gedcom_standard": "Estándar GEDCOM",
+    "character_encoding": "Codificación de Caracteres",
+    "submitter": "Remitente"
+  },
+  "records": {
+    "name": "Nombre",
+    "sex": "Sexo",
+    "events": "Eventos",
+    "spouse": "Cónyuge",
+    "children": "Hijos"
+  },
+  "raw_data": {
+    "raw_gedcom_dataset": "Conjunto de Datos GEDCOM sin Procesar",
+    "default_text": "Cargado desde el disco/conjunto de datos de ejemplo sin retención del texto sin procesar en memoria."
   }
 }
+
