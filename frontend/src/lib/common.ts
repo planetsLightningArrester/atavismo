@@ -30,6 +30,14 @@ export function cleanName(name?: string): string {
 }
 
 /**
+ * Truncates a string to a maximum character length, appending an ellipsis if truncated.
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text
+  return text.slice(0, Math.max(1, maxLength - 1)).trimEnd() + '…'
+}
+
+/**
  * Formats birth and death dates into a lifespan string, e.g. "(1927 - 1976)"
  */
 export function formatLifespan(birth?: EventDetails, death?: EventDetails): string {

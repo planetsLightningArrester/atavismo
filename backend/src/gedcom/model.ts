@@ -9,6 +9,88 @@ export class EventDetails {
 }
 
 /**
+ * Represents a source citation attached to an individual, family, or event.
+ */
+export class Citation {
+  sourceId: string = ''
+  page?: string
+  quay?: number
+  text?: string
+  date?: string
+}
+
+/**
+ * Represents a vital or secondary life event (e.g. BIRT, DEAT, CHR, BURI, OCCU, RESI, MARR, DIV).
+ */
+export class LifeEvent {
+  type: string = ''
+  date?: string
+  place?: string
+  year?: number
+  value?: string
+  cause?: string
+  notes?: string
+  citations: Citation[] = []
+}
+
+/**
+ * Represents a historical source record (SOUR).
+ */
+export class SourceRecord {
+  id: string = ''
+  title?: string
+  author?: string
+  publication?: string
+  repositoryId?: string
+  notes?: string
+}
+
+/**
+ * Represents an archival repository record (REPO).
+ */
+export class RepositoryRecord {
+  id: string = ''
+  name?: string
+  address?: string
+  phone?: string
+  email?: string
+  notes?: string
+}
+
+/**
+ * Represents a multimedia asset record (OBJE).
+ */
+export class MediaRecord {
+  id: string = ''
+  format?: string
+  title?: string
+  filePath?: string
+  notes?: string
+}
+
+/**
+ * Represents a file submitter record (SUBM).
+ */
+export class SubmitterRecord {
+  id: string = ''
+  name?: string
+  address?: string
+  email?: string
+  phone?: string
+  language?: string
+}
+
+/**
+ * Represents parser diagnostic warnings, notes, or non-fatal errors.
+ */
+export class ParserDiagnostic {
+  level: 'INFO' | 'WARN' | 'ERROR' = 'INFO'
+  line?: number
+  message: string = ''
+  tag?: string
+}
+
+/**
  * Represents header metadata of the GEDCOM file.
  */
 export class Metadata {
@@ -19,6 +101,11 @@ export class Metadata {
   atavismVersion?: string
   encoding?: string
   submitter?: string
+  destination?: string
+  date?: string
+  time?: string
+  language?: string
+  notes?: string
 }
 
 /**
@@ -37,6 +124,11 @@ export class Individual {
   famc: string[] = []
   lhash?: string
   hash?: string
+  nick?: string
+  marriedName?: string
+  events: LifeEvent[] = []
+  citations: Citation[] = []
+  mediaIds: string[] = []
 }
 
 /**
@@ -50,6 +142,10 @@ export class Family {
   marriage?: EventDetails
   divorced?: boolean
   hash?: string
+  events: LifeEvent[] = []
+  citations: Citation[] = []
+  mediaIds: string[] = []
+  notes?: string
 }
 
 /**
@@ -65,6 +161,12 @@ export class GedcomStats {
   latestYear?: number
   generationCount: number = 0
   topSurnames: Array<{ surname: string, count: number }> = []
+  totalSources: number = 0
+  totalRepositories: number = 0
+  totalMedia: number = 0
+  totalEvents: number = 0
+  livingCount: number = 0
+  deceasedCount: number = 0
 }
 
 /**
@@ -74,5 +176,10 @@ export class GedcomData {
   metadata: Metadata = new Metadata()
   individuals: Individual[] = []
   families: Family[] = []
+  sources: Record<string, SourceRecord> = {}
+  repositories: Record<string, RepositoryRecord> = {}
+  media: Record<string, MediaRecord> = {}
+  submitter?: SubmitterRecord
+  diagnostics: ParserDiagnostic[] = []
   stats: GedcomStats = new GedcomStats()
 }

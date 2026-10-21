@@ -29,6 +29,7 @@
         <button
           class="tab-btn"
           class:active={activeTab === 'overview'}
+          data-testid="tab-overview"
           on:click={() => {
             activeTab = 'overview'
           }}
@@ -38,6 +39,7 @@
         <button
           class="tab-btn"
           class:active={activeTab === 'tree'}
+          data-testid="tab-tree"
           on:click={() => {
             activeTab = 'tree'
           }}
@@ -47,6 +49,7 @@
         <button
           class="tab-btn"
           class:active={activeTab === 'records'}
+          data-testid="tab-records"
           on:click={() => {
             activeTab = 'records'
           }}
@@ -56,6 +59,7 @@
         <button
           class="tab-btn"
           class:active={activeTab === 'raw'}
+          data-testid="tab-raw"
           on:click={() => {
             activeTab = 'raw'
           }}

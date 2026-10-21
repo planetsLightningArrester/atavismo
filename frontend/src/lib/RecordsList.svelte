@@ -182,6 +182,24 @@
               <span class="event-label">{$_('main_page.death')}:</span>
               <span>{selectedPerson.death?.date ?? '—'} {typeof selectedPerson.death?.place === 'string' && selectedPerson.death.place.length > 0 ? `(${selectedPerson.death.place})` : ''}</span>
             </div>
+            {#if (selectedPerson.events?.length ?? 0) > 0}
+              {#each selectedPerson.events.filter(e => {
+                const isPrimaryBirth = selectedPerson.birth !== undefined && (e.type === 'BIRT' || e.type === selectedPerson.birth.type)
+                const isPrimaryDeath = selectedPerson.death !== undefined && (e.type === 'DEAT' || e.type === selectedPerson.death.type)
+                const hasDetails = (e.value?.length ?? 0) > 0 || (e.date?.length ?? 0) > 0 || (e.place?.length ?? 0) > 0 || (e.cause?.length ?? 0) > 0
+                return !isPrimaryBirth && !isPrimaryDeath && hasDetails
+              }) as ev}
+                <div class="event-item">
+                  <span class="event-label">{$_(`records.event_types.${ev.type}`, { default: ev.type })}:</span>
+                  <span>
+                    {typeof ev.value === 'string' && ev.value.length > 0 ? `${ev.value} ` : ''}
+                    {typeof ev.date === 'string' && ev.date.length > 0 ? `(${ev.date}) ` : ''}
+                    {typeof ev.place === 'string' && ev.place.length > 0 ? `— ${ev.place} ` : ''}
+                    {typeof ev.cause === 'string' && ev.cause.length > 0 ? `[${ev.cause}]` : ''}
+                  </span>
+                </div>
+              {/each}
+            {/if}
           </div>
 
           <!-- Family Links -->

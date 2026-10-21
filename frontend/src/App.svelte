@@ -64,7 +64,8 @@
       gedcomData = response.result
       if (typeof filename === 'string' && filename.length > 0) loadedFileName = filename
       if (gedcomData.individuals.length > 0) {
-        selectedIndividualId = gedcomData.individuals[0].id
+        const connected = gedcomData.individuals.find((i) => i.famc.length > 0 && i.fams.length > 0)
+        selectedIndividualId = connected?.id ?? gedcomData.individuals[0].id
       }
     }
   }
@@ -204,9 +205,11 @@
       </div>
     {:else}
       <!-- Loaded Dataset Dashboard -->
-      <div class="dashboard-content">
+      <div class="dashboard-content" class:tree-active={activeTab === 'tree'}>
         <!-- Top Metrics Cards -->
-        <MetricsCard stats={gedcomData.stats} metadata={gedcomData.metadata} />
+        {#if activeTab === 'overview'}
+          <MetricsCard stats={gedcomData.stats} metadata={gedcomData.metadata} />
+        {/if}
 
         <!-- Tab Views -->
         {#if activeTab === 'overview'}
@@ -257,7 +260,7 @@
             <TreePreview individuals={gedcomData.individuals} families={gedcomData.families} bind:selectedIndividualId />
           </div>
         {:else if activeTab === 'tree'}
-          <div class="tab-pane">
+          <div class="tab-pane tree-tab-pane">
             <TreePreview individuals={gedcomData.individuals} families={gedcomData.families} bind:selectedIndividualId />
           </div>
         {:else if activeTab === 'records'}
@@ -510,6 +513,17 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+  }
+
+  .dashboard-content.tree-active {
+    gap: 0;
+  }
+
+  .tab-pane.tree-tab-pane {
+    height: calc(100vh - 165px);
+    min-height: 640px;
+    display: flex;
+    flex-direction: column;
   }
 
   .overview-grid {

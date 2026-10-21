@@ -54,9 +54,25 @@
     "current_individual_and_spouses": "CURRENT INDIVIDUAL & SPOUSES",
     "parents": "PARENTS",
     "children": "CHILDREN",
-    "interactive_pedigree_view": "Interactive Pedigree View",
+    "interactive_pedigree_view": "Interactive Tree Visualization",
     "primary_focus": "PRIMARY FOCUS",
-    "married": "Married"
+    "married": "Married",
+    "view_pedigree": "Pedigree Tree",
+    "view_descendants": "Descendant Tree",
+    "view_hourglass": "Hourglass Chart",
+    "view_fan_chart": "Fan Chart",
+    "view_cards": "Family Units",
+    "fan_360": "360° Full Wheel",
+    "fan_180": "180° Fan",
+    "zoom_in": "Zoom In",
+    "zoom_out": "Zoom Out",
+    "reset_zoom": "Reset View",
+    "center_focus": "Center",
+    "export_svg": "Export SVG",
+    "export_png": "Export PNG",
+    "generations": "Generations",
+    "quick_jump": "Jump to person...",
+    "no_descendants": "No descendants recorded"
   },
   "tree_overview": {
     "summary": "Successfully loaded <b>{individuals_amount} individuals</b> grouped into <b>{families_amount} families</b> spanning <b>{generations_amount} generations</b>",
@@ -75,7 +91,24 @@
     "sex": "Sex",
     "events": "Events",
     "spouse": "Spouse",
-    "children": "Children"
+    "children": "Children",
+    "event_types": {
+      "OCCU": "Occupation",
+      "RESI": "Residence",
+      "EDUC": "Education",
+      "CHR": "Christening",
+      "BAPM": "Baptism",
+      "BURI": "Burial",
+      "CREM": "Cremation",
+      "IMMI": "Immigration",
+      "EMIG": "Emigration",
+      "CENS": "Census",
+      "GRAD": "Graduation",
+      "RETI": "Retirement",
+      "PROB": "Probate",
+      "WILL": "Will",
+      "EVEN": "Event"
+    }
   },
   "raw_data": {
     "raw_gedcom_dataset": "Raw GEDCOM Dataset",

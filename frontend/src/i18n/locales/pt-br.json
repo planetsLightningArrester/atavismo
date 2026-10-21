@@ -54,9 +54,25 @@
     "current_individual_and_spouses": "INDIVÍDUO ATUAL E CÔNJUGES",
     "parents": "PAIS",
     "children": "FILHOS",
-    "interactive_pedigree_view": "Visualização Interativa de Linhagem",
+    "interactive_pedigree_view": "Visualização Interativa da Árvore",
     "primary_focus": "FOCO PRINCIPAL",
-    "married": "Casamento"
+    "married": "Casamento",
+    "view_pedigree": "Árvore de Ascendência",
+    "view_descendants": "Árvore de Descendência",
+    "view_hourglass": "Gráfico Ampulheta",
+    "view_fan_chart": "Gráfico em Leque",
+    "view_cards": "Unidades Familiares",
+    "fan_360": "Roda Completa 360°",
+    "fan_180": "Leque 180°",
+    "zoom_in": "Aproximar",
+    "zoom_out": "Afastar",
+    "reset_zoom": "Redefinir Vista",
+    "center_focus": "Centralizar",
+    "export_svg": "Exportar SVG",
+    "export_png": "Exportar PNG",
+    "generations": "Gerações",
+    "quick_jump": "Ir para pessoa...",
+    "no_descendants": "Nenhum descendente registrado"
   },
   "tree_overview": {
     "summary": "Carregados com sucesso <b>{individuals_amount} indivíduos</b> agrupados em <b>{families_amount} famílias</b> abrangendo <b>{generations_amount} gerações</b>",
@@ -75,7 +91,24 @@
     "sex": "Sexo",
     "events": "Eventos",
     "spouse": "Cônjuge",
-    "children": "Filhos"
+    "children": "Filhos",
+    "event_types": {
+      "OCCU": "Profissão",
+      "RESI": "Residência",
+      "EDUC": "Educação",
+      "CHR": "Batismo",
+      "BAPM": "Batismo",
+      "BURI": "Sepultamento",
+      "CREM": "Cremação",
+      "IMMI": "Imigração",
+      "EMIG": "Emigração",
+      "CENS": "Censo",
+      "GRAD": "Graduação",
+      "RETI": "Aposentadoria",
+      "PROB": "Inventário",
+      "WILL": "Testamento",
+      "EVEN": "Evento"
+    }
   },
   "raw_data": {
     "raw_gedcom_dataset": "Conjunto de Dados GEDCOM Bruto",

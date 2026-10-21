@@ -54,9 +54,25 @@
     "current_individual_and_spouses": "当前人物与配偶",
     "parents": "父母",
     "children": "子女",
-    "interactive_pedigree_view": "交互式系谱视图",
+    "interactive_pedigree_view": "交互式家谱树可视化",
     "primary_focus": "主要焦点",
-    "married": "结婚"
+    "married": "结婚",
+    "view_pedigree": "先祖系谱树",
+    "view_descendants": "后代世系树",
+    "view_hourglass": "双向沙漏图",
+    "view_fan_chart": "扇形圆环图",
+    "view_cards": "家庭核心单元",
+    "fan_360": "360°全圆盘",
+    "fan_180": "180°半圆扇",
+    "zoom_in": "放大",
+    "zoom_out": "缩小",
+    "reset_zoom": "重置视图",
+    "center_focus": "居中",
+    "export_svg": "导出 SVG",
+    "export_png": "导出 PNG",
+    "generations": "世代深度",
+    "quick_jump": "跳转到人物...",
+    "no_descendants": "未记录后代"
   },
   "tree_overview": {
     "summary": "已成功加载 <b>{individuals_amount} 位人物</b>，归入 <b>{families_amount} 个家庭</b>，跨越 <b>{generations_amount} 个世代</b>",
@@ -75,7 +91,24 @@
     "sex": "性别",
     "events": "事件",
     "spouse": "配偶",
-    "children": "子女"
+    "children": "子女",
+    "event_types": {
+      "OCCU": "职业",
+      "RESI": "居住地",
+      "EDUC": "教育",
+      "CHR": "洗礼",
+      "BAPM": "洗礼",
+      "BURI": "葬礼",
+      "CREM": "火化",
+      "IMMI": "移民",
+      "EMIG": "移居",
+      "CENS": "人口普查",
+      "GRAD": "毕业",
+      "RETI": "退休",
+      "PROB": "遗嘱认证",
+      "WILL": "遗嘱",
+      "EVEN": "事件"
+    }
   },
   "raw_data": {
     "raw_gedcom_dataset": "原始 GEDCOM 数据集",
