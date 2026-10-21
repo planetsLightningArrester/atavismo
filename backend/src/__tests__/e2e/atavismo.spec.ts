@@ -122,4 +122,128 @@ test.describe.serial('Atavismo E2E Tests', () => {
     await fan360Btn.click()
     await expect(window.locator('.fan-arc').first()).toBeVisible()
   })
+
+  test('enforces fullscreen rendering performance invariants (zero idle layouts, filter-free SVG cards, layout-free pan/zoom, bounded DOM nodes)', async () => {
+    await window.setViewportSize({ width: 1920, height: 1080 })
+
+    // 1. Background video must not be present in the DOM
+    await expect(window.locator('video')).toHaveCount(0)
+
+    // Switch to Hourglass tree view at fullscreen
+    const hgBtn = window.getByRole('button', { name: /hourglass/i })
+    await hgBtn.click()
+    const firstNodeBox = window.locator('.node-box').first()
+    await expect(firstNodeBox).toBeVisible()
+
+    // 2. SVG node cards must not use expensive per-node SVG <filter> (feDropShadow) surfaces
+    const filterAttr = await firstNodeBox.getAttribute('filter')
+    expect(filterAttr).toBeNull()
+    const computedFilter = await firstNodeBox.evaluate((el) => globalThis.getComputedStyle(el).filter)
+    expect(computedFilter).toBe('none')
+
+    // Attach CDP session for deterministic rendering & layout telemetry
+    const cdp = await window.context().newCDPSession(window)
+    await cdp.send('Performance.enable')
+
+    const getMetricsMap = async (): Promise<Record<string, number>> => {
+      const { metrics } = await cdp.send('Performance.getMetrics')
+      const map: Record<string, number> = {}
+      for (const m of metrics) {
+        map[m.name] = m.value
+      }
+      return map
+    }
+
+    // Settle layout after viewport resize
+    await window.waitForTimeout(250)
+
+    // 3. Idle Main-Thread Quietness: 0 layouts and 0 style recalculations over 500ms at rest
+    const idleBefore = await getMetricsMap()
+    await window.waitForTimeout(500)
+    const idleAfter = await getMetricsMap()
+
+    expect(idleAfter.LayoutCount - idleBefore.LayoutCount).toBe(0)
+    expect(idleAfter.RecalcStyleCount - idleBefore.RecalcStyleCount).toBe(0)
+
+    // 4. Pan/Zoom Layout-Thrashing Guard: 36 pan/zoom events must not reflow layout per frame (<= 2 total)
+    const panBefore = await getMetricsMap()
+    await window.evaluate(async () => {
+      const vp = document.querySelector('.svg-viewport')
+      if (vp === null) return
+      const rect = vp.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+
+      vp.dispatchEvent(new MouseEvent('mousedown', { clientX: cx, clientY: cy, bubbles: true }))
+      for (let i = 1; i <= 30; i++) {
+        vp.dispatchEvent(new MouseEvent('mousemove', { clientX: cx + i * 4, clientY: cy + i * 2, bubbles: true }))
+        if (i % 5 === 0) {
+          vp.dispatchEvent(new WheelEvent('wheel', { clientX: cx, clientY: cy, deltaY: -80, bubbles: true, cancelable: true }))
+        }
+      }
+      vp.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+    })
+    const panAfter = await getMetricsMap()
+
+    expect(panAfter.LayoutCount - panBefore.LayoutCount).toBeLessThanOrEqual(2)
+
+    // 5. Bounded DOM Complexity: Records tab pagination caps rendered rows at 100 and keeps live DOM elements < 2000
+    const recordsTab = window.getByTestId('tab-records')
+    await recordsTab.click()
+    await expect(window.locator('.records-table')).toBeVisible()
+    await expect(window.locator('.record-row')).toHaveCount(100)
+    const liveDomElements = await window.evaluate(() => document.querySelectorAll('*').length)
+    expect(liveDomElements).toBeLessThan(2000)
+
+    await cdp.detach()
+  })
+
+  test('explores Phase 4 life timeline, sources, repositories, media gallery, and fuzzy filters', async () => {
+    const recordsTab = window.getByTestId('tab-records')
+    await recordsTab.click()
+
+    // 1. Verify chronological life timeline in Inspector Panel
+    const timeline = window.getByTestId('inspector-timeline')
+    await expect(timeline).toBeVisible()
+    const timelineEventsCount = await window.getByTestId('timeline-event-item').count()
+    expect(timelineEventsCount).toBeGreaterThan(0)
+
+    // 2. Test diacritic-insensitive & typo-tolerant fuzzy search ("Sao Paulo" matches "São Paulo")
+    const searchInput = window.getByTestId('search-records-input')
+    await searchInput.fill('Sao Paulo')
+    const matchedRows = await window.locator('.record-row').count()
+    expect(matchedRows).toBeGreaterThan(0)
+    await searchInput.fill('')
+
+    // 3. Test "With Media" filter toggle and inspect person with media (@I2@ has @O1@/@O2@)
+    const mediaFilterBtn = window.getByTestId('filter-with-media-btn')
+    await mediaFilterBtn.click()
+    const mediaRowsCount = await window.locator('.record-row').count()
+    expect(mediaRowsCount).toBeGreaterThan(0)
+    await window.locator('.record-row').first().click()
+    await expect(window.getByTestId('inspector-media-section')).toBeVisible()
+    await mediaFilterBtn.click()
+
+    // 4. Switch to Sources (SOUR) sub-tab and verify source cards
+    const sourcesSubtab = window.getByTestId('records-subtab-sources')
+    await sourcesSubtab.click()
+    await expect(window.getByTestId('sources-explorer-grid')).toBeVisible()
+    expect(await window.getByTestId('source-card').count()).toBe(4)
+
+    // 5. Switch to Repositories (REPO) sub-tab and verify repository cards
+    const reposSubtab = window.getByTestId('records-subtab-repositories')
+    await reposSubtab.click()
+    await expect(window.getByTestId('repositories-explorer-grid')).toBeVisible()
+    expect(await window.getByTestId('repository-card').count()).toBe(3)
+
+    // 6. Switch to Multimedia (OBJE) sub-tab and verify media cards
+    const mediaSubtab = window.getByTestId('records-subtab-media')
+    await mediaSubtab.click()
+    await expect(window.getByTestId('media-explorer-grid')).toBeVisible()
+    expect(await window.getByTestId('media-card').count()).toBe(2)
+
+    // Return to Individuals sub-tab
+    await window.getByTestId('records-subtab-individuals').click()
+    await expect(window.locator('.records-table')).toBeVisible()
+  })
 })

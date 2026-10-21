@@ -63,8 +63,8 @@ export class GedcomParser {
 
     const parsedLines: GedcomLine[] = []
     for (let i = 0; i < rawLines.length; i++) {
-      const line = rawLines[i].trim()
-      if (line.length === 0) continue
+      const line = rawLines[i].trimStart()
+      if (line.trim().length === 0) continue
 
       const parsed = GedcomParser.parseLine(line, i + 1)
       if (parsed !== undefined) {
@@ -191,22 +191,22 @@ export class GedcomParser {
       if (line.level === 1) {
         inSource = line.tag === 'SOUR'
         inGedc = line.tag === 'GEDC'
-        if (inSource && line.value !== undefined) meta.source = line.value
-        if (line.tag === 'CHAR' && line.value !== undefined) meta.encoding = line.value
-        if (line.tag === 'SUBM' && line.value !== undefined) meta.submitter = line.value
-        if (line.tag === 'DEST' && line.value !== undefined) meta.destination = line.value
-        if (line.tag === 'DATE' && line.value !== undefined) meta.date = line.value
-        if (line.tag === 'LANG' && line.value !== undefined) meta.language = line.value
-        if (line.tag === 'NOTE' && line.value !== undefined) meta.notes = line.value
+        if (inSource && line.value !== undefined) meta.source = line.value.trim()
+        if (line.tag === 'CHAR' && line.value !== undefined) meta.encoding = line.value.trim()
+        if (line.tag === 'SUBM' && line.value !== undefined) meta.submitter = line.value.trim()
+        if (line.tag === 'DEST' && line.value !== undefined) meta.destination = line.value.trim()
+        if (line.tag === 'DATE' && line.value !== undefined) meta.date = line.value.trim()
+        if (line.tag === 'LANG' && line.value !== undefined) meta.language = line.value.trim()
+        if (line.tag === 'NOTE' && line.value !== undefined) meta.notes = line.value.trim()
       } else if (line.level === 2) {
         if (inSource) {
-          if (line.tag === 'VERS' && line.value !== undefined) meta.version = line.value
-          if (line.tag === 'NAME' && line.value !== undefined) meta.name = line.value
-          if (line.tag === 'CORP' && line.value !== undefined) meta.corporation = line.value
+          if (line.tag === 'VERS' && line.value !== undefined) meta.version = line.value.trim()
+          if (line.tag === 'NAME' && line.value !== undefined) meta.name = line.value.trim()
+          if (line.tag === 'CORP' && line.value !== undefined) meta.corporation = line.value.trim()
         } else if (inGedc) {
-          if (line.tag === 'VERS' && line.value !== undefined) meta.atavismVersion = line.value
+          if (line.tag === 'VERS' && line.value !== undefined) meta.atavismVersion = line.value.trim()
         } else if (line.tag === 'TIME' && line.value !== undefined) {
-          meta.time = line.value
+          meta.time = line.value.trim()
         }
       }
     }
@@ -242,7 +242,7 @@ export class GedcomParser {
         currentNoteTarget = undefined
 
         if (line.tag === 'NAME' && line.value !== undefined) {
-          indi.name = line.value
+          indi.name = line.value.trim()
           const surnameMatch = /\/([^/]+)\//.exec(line.value)
           if (surnameMatch?.[1] !== undefined) {
             indi.surname = surnameMatch[1].trim()

@@ -6,8 +6,6 @@
   import TreePreview from './lib/TreePreview.svelte'
   import RecordsList from './lib/RecordsList.svelte'
   import Footer from './lib/Footer.svelte'
-  import backgroundVideo from './assets/background.mp4'
-  import { resolveImgPath } from './lib/common'
   import { Icon, Styles } from '@sveltestrap/sveltestrap'
 
   // Svelte generates innerHTML assignments breaking CSP "require-trusted-types-for 'script'" in production code
@@ -153,11 +151,6 @@
 <Styles />
 
 <div class="app-root" role="region" aria-label="Atavismo" on:dragover={handleDragOver} on:dragleave={handleDragLeave} on:drop={handleDrop}>
-  <!-- Background video -->
-  <video autoplay muted loop id="background-video">
-    <source src={resolveImgPath(backgroundVideo)} type="video/mp4" />
-  </video>
-
   <!-- Top App Header -->
   <Header bind:activeTab onOpenFile={openNativeFileDialog} onLoadSample={loadSampleTree} hasData={gedcomData !== undefined} fileName={loadedFileName} />
 
@@ -265,7 +258,17 @@
           </div>
         {:else if activeTab === 'records'}
           <div class="tab-pane">
-            <RecordsList individuals={gedcomData.individuals} families={gedcomData.families} bind:selectedIndividualId />
+            <RecordsList
+              individuals={gedcomData.individuals}
+              families={gedcomData.families}
+              sources={gedcomData.sources}
+              repositories={gedcomData.repositories}
+              media={gedcomData.media}
+              bind:selectedIndividualId
+              onExploreInTree={() => {
+                activeTab = 'tree'
+              }}
+            />
           </div>
         {:else if activeTab === 'raw'}
           <div class="tab-pane raw-pane">
@@ -311,19 +314,7 @@
     display: flex;
     flex-direction: column;
     position: relative;
-  }
-
-  #background-video {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -10;
-    opacity: 0.25;
-    object-fit: cover;
-    object-position: center center;
-    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 25%, #16213a 0%, #0b0f19 75%);
   }
 
   .main-content {

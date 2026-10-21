@@ -7,6 +7,7 @@
     "start": "concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm run dev\"",
     "build": "npm run build:frontend && npm run build:backend",
     "test": "cd backend && npm run test",
+    "test:perf": "cd backend && npm run test:perf",
     "test:dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run test:dev\"",
     "test-ui": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run test-ui\"",
     "build:frontend": "cd frontend && npm run build",

@@ -257,6 +257,17 @@ test.describe('GedcomParser Unit Tests', () => {
     expect(parsed.stats.livingCount).toBeGreaterThan(0)
     expect(parsed.stats.deceasedCount).toBeGreaterThan(0)
     expect(parsed.stats.topSurnames.length).toBeGreaterThan(0)
+
+    // Verify ENGA family events and unbroken CONC+CONT biographical notes in sample.gedcom
+    expect(parsed.families.some(f => f.events.some(e => e.type === 'ENGA'))).toBe(true)
+    for (const indi of parsed.individuals) {
+      expect(indi.notes).toBeDefined()
+      expect(indi.notes).not.toContain('tí\n')
+      expect(indi.notes).not.toContain('fo\n')
+      expect(indi.notes).not.toContain('l\n')
+      expect(indi.notes).not.toContain('cívic\n')
+      expect(indi.notes).toContain('\n\nRegistro memorialístico preservado no acervo histórico de Atavismo.')
+    }
   })
 
   test('correctly calculates generation depth on converging family DAG', () => {
@@ -638,5 +649,67 @@ test.describe('GedcomParser Unit Tests', () => {
     }).not.toThrow()
     expect(parsed?.individuals).toHaveLength(1)
     expect(parsed?.individuals[0].name).toBe('Good /Record/')
+  })
+
+  test('P4-1: parses synthetic 5,000-individual dataset in linear O(N) time without superlinear degradation', () => {
+    const buildSyntheticGedcom = (individualCount: number): string => {
+      const lines: string[] = ['0 HEAD', '1 SOUR PerfBench', '1 GEDC', '2 VERS 5.5.1', '1 CHAR UTF-8']
+      const familyCount = Math.floor(individualCount / 2)
+
+      for (let i = 1; i <= individualCount; i++) {
+        const sex = i % 2 === 1 ? 'M' : 'F'
+        const famcIndex = Math.floor(i / 4)
+        const famsIndex = Math.ceil(i / 2)
+        lines.push(`0 @I${i}@ INDI`)
+        lines.push(`1 NAME Person${i} /Surname${i % 50}/`)
+        lines.push(`1 SEX ${sex}`)
+        lines.push('1 BIRT')
+        lines.push(`2 DATE ${1700 + (i % 300)}`)
+        lines.push('2 PLAC Lisbon, Portugal')
+        if (famcIndex >= 1) {
+          lines.push(`1 FAMC @F${famcIndex}@`)
+        }
+        if (famsIndex <= familyCount) {
+          lines.push(`1 FAMS @F${famsIndex}@`)
+        }
+      }
+
+      for (let f = 1; f <= familyCount; f++) {
+        const husbId = f * 2 - 1
+        const wifeId = f * 2
+        const child1 = f * 4
+        const child2 = f * 4 + 1
+        lines.push(`0 @F${f}@ FAM`)
+        lines.push(`1 HUSB @I${husbId}@`)
+        lines.push(`1 WIFE @I${wifeId}@`)
+        if (child1 <= individualCount) lines.push(`1 CHIL @I${child1}@`)
+        if (child2 <= individualCount) lines.push(`1 CHIL @I${child2}@`)
+      }
+
+      lines.push('0 TRLR')
+      return lines.join('\n')
+    }
+
+    const gedSmall = buildSyntheticGedcom(500)
+    const gedLarge = buildSyntheticGedcom(5000)
+
+    // Warm up JIT compiler
+    GedcomParser.parse(gedSmall)
+
+    const t0Small = performance.now()
+    const resSmall = GedcomParser.parse(gedSmall)
+    const durationSmallMs = Math.max(performance.now() - t0Small, 1)
+
+    const t0Large = performance.now()
+    const resLarge = GedcomParser.parse(gedLarge)
+    const durationLargeMs = performance.now() - t0Large
+
+    expect(resSmall.individuals).toHaveLength(500)
+    expect(resLarge.individuals).toHaveLength(5000)
+    expect(resLarge.families).toHaveLength(2500)
+
+    // 5,000 individuals should parse well within 500ms and scale linearly (< 25x for 10x input)
+    expect(durationLargeMs).toBeLessThan(500)
+    expect(durationLargeMs / durationSmallMs).toBeLessThan(25)
   })
 })

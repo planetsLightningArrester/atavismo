@@ -892,9 +892,6 @@
             <stop offset="0%" stop-color="#f59e0b" />
             <stop offset="100%" stop-color="#d97706" />
           </linearGradient>
-          <filter id="shadowFilter" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.4" />
-          </filter>
           <clipPath id="nodeCardClip">
             <rect x="-105" y="-36" width="202" height="72" rx="10" />
           </clipPath>
@@ -964,6 +961,16 @@
                 >
                   <title>{cleanName(p.name)} {formatLifespan(p.birth, p.death)}</title>
 
+                  <!-- Card Drop Shadow (filter-free for fast SVG pan/zoom) -->
+                  <rect
+                    x="-105"
+                    y="-32"
+                    width="210"
+                    height="72"
+                    rx="10"
+                    fill="rgba(0, 0, 0, 0.38)"
+                  />
+
                   <!-- Card Background -->
                   <rect
                     x="-105"
@@ -974,7 +981,6 @@
                     fill={p.sex === 'M' ? 'url(#maleGrad)' : 'url(#femaleGrad)'}
                     stroke={isSelected ? '#f59e0b' : p.sex === 'M' ? '#38bdf8' : '#f472b6'}
                     stroke-width={isSelected ? 3 : 1.5}
-                    filter="url(#shadowFilter)"
                     class="node-box"
                   />
 
@@ -1290,7 +1296,6 @@
   /* Tree Nodes SVG styling */
   .node-card-group {
     cursor: pointer;
-    transition: transform 0.2s ease;
   }
 
   .node-card-group:hover .node-box {

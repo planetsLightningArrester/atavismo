@@ -169,6 +169,15 @@ jobs:
             echo "success=false" >> $GITHUB_OUTPUT
           }
 
+      - name: ⚡ Run performance benchmark (telemetry)
+        if: ${{ matrix.os.version == 'ubuntu-latest' && steps.test.outputs.success != 'false' }}
+        continue-on-error: true
+        run: |
+          echo "### ⚡ Fullscreen Performance Benchmark" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npm run test:perf | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
       - name: 🎯 Check if the job succeeded
         if: ${{ !cancelled() }}
         id: result
