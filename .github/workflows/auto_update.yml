@@ -40,7 +40,7 @@ jobs:
       - name: 🛠️ NodeJS setup
         uses: actions/setup-node@v6
         with:
-          node-verison: 24
+          node-version: 24
 
       - name: 📡 Install latest dependencies
         if: ${{ !cancelled() && contains(needs.ci_check_latest_deps.result, 'success') }}

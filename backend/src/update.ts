@@ -53,15 +53,16 @@ export async function getUpdates(): Promise<Update | undefined> {
         (latestMajor === currentMajor && latestMinor === currentMinor && latestPatch > currentPatch)
       ) {
         let fileName: string
+        const arch = process.arch
         switch (process.platform) {
           case 'darwin':
-            fileName = `Atavismo-darwin-x64-${latestVersion}.zip`
+            fileName = `Atavismo-darwin-${arch}-${latestVersion}.zip`
             break
           case 'win32':
-            fileName = `Atavismo-win32-x64-${latestVersion}.zip`
+            fileName = `Atavismo-win32-${arch}-${latestVersion}.zip`
             break
           case 'linux':
-            fileName = `Atavismo-linux-x64-${latestVersion}.zip`
+            fileName = `Atavismo-linux-${arch}-${latestVersion}.zip`
             break
           default:
             err.log(`Unsupported OS '${process.platform}'`)

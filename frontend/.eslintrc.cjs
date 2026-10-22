@@ -8,7 +8,7 @@ module.exports = {
     es2021: true,
     node: true
   },
-  extends: ['plugin:svelte/recommended', 'standard-with-typescript'],
+  extends: ['standard-with-typescript'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     project: './tsconfig.eslint.json',
@@ -24,7 +24,7 @@ module.exports = {
       }
     }
   ],
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'svelte'],
   root: true,
   rules: {
     'no-self-assign': 'off',
