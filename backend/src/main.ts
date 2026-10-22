@@ -1,4 +1,3 @@
-// import crypto from 'crypto'
 import path from 'path'
 import { URL } from 'url'
 import { server } from './server'
@@ -8,11 +7,10 @@ import { app, BrowserWindow } from 'electron'
 const tempDir = app.getPath('temp')
 const logDir = app.getPath('logs')
 
-/** Logs an info */
 const info = Print.create()
 info.preAppend(`[${color.orange}MAIN${color.reset}] [${color.cyan}INFO${color.reset}] `)
 info.logToFile(path.join(logDir, 'app.log'))
-/** Logs an error */
+
 const err = Print.create()
 err.preAppend(`[${color.orange}MAIN${color.reset}] [${color.red}ERROR${color.reset}] `)
 err.logToFile(path.join(logDir, 'app.log'))

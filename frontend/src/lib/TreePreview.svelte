@@ -102,14 +102,14 @@
           if (typeof fam.husbandId === 'string' && fam.husbandId.length > 0) {
             const father = buildAncestorTree(fam.husbandId, depth + 1, maxDepth)
             if (father !== null) {
-              father.role = 'Father'
+              father.role = 'father'
               node.children?.push(father)
             }
           }
           if (typeof fam.wifeId === 'string' && fam.wifeId.length > 0) {
             const mother = buildAncestorTree(fam.wifeId, depth + 1, maxDepth)
             if (mother !== null) {
-              mother.role = 'Mother'
+              mother.role = 'mother'
               node.children?.push(mother)
             }
           }
@@ -1015,7 +1015,11 @@
                       {truncateText(
                         typeof p.birth?.place === 'string' && p.birth.place.length > 0
                           ? p.birth.place.split(',')[0]
-                          : (n.data.role ?? p.id),
+                          : n.data.role === 'father'
+                            ? $_('family_tree.father')
+                            : n.data.role === 'mother'
+                              ? $_('family_tree.mother')
+                              : (n.data.role ?? p.id),
                         26
                       )}
                     </text>
@@ -1025,7 +1029,7 @@
                   {#if isSelected}
                     <g transform="translate(68, -44)">
                       <rect x="-35" y="0" width="70" height="18" rx="9" fill="url(#focusGlow)" />
-                      <text x="0" y="12" text-anchor="middle" class="focus-tag-text">FOCUS</text>
+                      <text x="0" y="12" text-anchor="middle" class="focus-tag-text">{$_('family_tree.focus_badge')}</text>
                     </g>
                   {/if}
                 </g>

@@ -105,6 +105,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 16px;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -225,5 +227,33 @@
   .locales-wrapper {
     display: flex;
     align-items: center;
+  }
+
+  @media (max-width: 1150px) {
+    .app-header {
+      padding: 10px 16px;
+    }
+
+    .header-center {
+      order: 3;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .view-tabs {
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .tab-btn {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .action-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
   }
 </style>

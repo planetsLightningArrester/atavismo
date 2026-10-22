@@ -9,6 +9,7 @@ const config: ForgeConfig = {
     asar: true,
     icon: path.join(__dirname, 'src', 'images', 'icon'),
     executableName: 'atavismo',
+    extraResource: [path.join(__dirname, '..', 'sample.gedcom')]
   },
   rebuildConfig: {},
   makers: [new MakerZIP({})],

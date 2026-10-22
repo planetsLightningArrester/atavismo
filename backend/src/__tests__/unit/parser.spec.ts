@@ -712,4 +712,49 @@ test.describe('GedcomParser Unit Tests', () => {
     expect(durationLargeMs).toBeLessThan(500)
     expect(durationLargeMs / durationSmallMs).toBeLessThan(25)
   })
+
+  test('parses UTF-16 LE with BOM and null bytes cleanly', () => {
+    const plain = '0 HEAD\n1 SOUR UTF16Test\n1 CHAR UNICODE\n0 @I1@ INDI\n1 NAME Clara /Nunes/\n1 SEX F\n0 TRLR'
+    const utf16LeSim = '\uFFFE' + plain.split('').join('\0')
+    const parsed = GedcomParser.parse(utf16LeSim)
+    expect(parsed.individuals).toHaveLength(1)
+    expect(parsed.individuals[0].name).toBe('Clara /Nunes/')
+    expect(parsed.individuals[0].surname).toBe('Nunes')
+  })
+
+  test('resolves top-level shared 0 @N1@ NOTE records referenced by pointer', () => {
+    const raw = `0 HEAD
+1 SOUR SharedNoteTest
+0 @N1@ NOTE Historical parish note line 1.
+1 CONT Second paragraph of shared note.
+1 CONC  Appended tail.
+0 @I1@ INDI
+1 NAME João /Silva/
+1 NOTE @N1@
+1 BIRT
+2 DATE 10 MAY 1890
+2 NOTE @N1@
+0 TRLR`
+
+    const parsed = GedcomParser.parse(raw)
+    expect(parsed.notes['@N1@']).toBe('Historical parish note line 1.\nSecond paragraph of shared note. Appended tail.')
+    expect(parsed.individuals[0].notes).toBe('Historical parish note line 1.\nSecond paragraph of shared note. Appended tail.')
+    expect(parsed.individuals[0].events[0].notes).toBe('Historical parish note line 1.\nSecond paragraph of shared note. Appended tail.')
+  })
+
+  test('extracts surname fallback when 1 NAME has no slashes', () => {
+    const raw = `0 HEAD
+1 SOUR SlashlessNameTest
+0 @I1@ INDI
+1 NAME Abraham Lincoln
+1 SEX M
+0 TRLR`
+
+    const parsed = GedcomParser.parse(raw)
+    expect(parsed.individuals).toHaveLength(1)
+    expect(parsed.individuals[0].name).toBe('Abraham Lincoln')
+    expect(parsed.individuals[0].givenName).toBe('Abraham')
+    expect(parsed.individuals[0].surname).toBe('Lincoln')
+    expect(parsed.stats.topSurnames).toEqual([{ surname: 'Lincoln', count: 1 }])
+  })
 })

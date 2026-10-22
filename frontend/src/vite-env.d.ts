@@ -108,6 +108,7 @@ interface Metadata {
   time?: string
   language?: string
   notes?: string
+  rawPreview?: string
 }
 
 /** Represents an individual (INDI) record in the family tree. */
@@ -173,6 +174,7 @@ interface GedcomData {
   sources: Record<string, SourceRecord>
   repositories: Record<string, RepositoryRecord>
   media: Record<string, MediaRecord>
+  notes?: Record<string, string>
   submitter?: SubmitterRecord
   diagnostics: ParserDiagnostic[]
   stats: GedcomStats

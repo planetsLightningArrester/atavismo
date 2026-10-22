@@ -106,6 +106,7 @@ export class Metadata {
   time?: string
   language?: string
   notes?: string
+  rawPreview?: string
 }
 
 /**
@@ -179,6 +180,7 @@ export class GedcomData {
   sources: Record<string, SourceRecord> = {}
   repositories: Record<string, RepositoryRecord> = {}
   media: Record<string, MediaRecord> = {}
+  notes: Record<string, string> = {}
   submitter?: SubmitterRecord
   diagnostics: ParserDiagnostic[] = []
   stats: GedcomStats = new GedcomStats()

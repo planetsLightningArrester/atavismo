@@ -637,7 +637,7 @@
         </table>
         {#if filteredIndividuals.length > 100}
           <div class="table-footer-notice">
-            Showing first 100 of {filteredIndividuals.length} records. Use search to refine.
+            {$_({ id: 'records.showing_first_n', values: { total: filteredIndividuals.length } })}
           </div>
         {/if}
       </div>
@@ -1165,14 +1165,27 @@
 
   .records-layout {
     display: grid;
-    grid-template-columns: 1fr 430px;
+    grid-template-columns: minmax(0, 1fr) 420px;
     gap: 20px;
     align-items: start;
   }
 
-  @media (max-width: 1024px) {
+  @media (max-width: 1150px) {
+    .records-layout {
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 14px;
+    }
+  }
+
+  @media (max-width: 760px) {
     .records-layout {
       grid-template-columns: 1fr;
+    }
+
+    .inspector-panel {
+      order: -1;
+      position: static;
+      max-height: 420px;
     }
   }
 

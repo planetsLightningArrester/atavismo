@@ -287,7 +287,7 @@
           <div class="tab-pane raw-pane">
             <div class="raw-card">
               <h3 class="pane-title">{$_('raw_data.raw_gedcom_dataset')}</h3>
-              <pre class="raw-pre"><code>{rawText.length > 0 ? rawText : $_('raw_data.default_text')}</code></pre>
+              <pre class="raw-pre"><code>{rawText.length > 0 ? rawText : (gedcomData.metadata.rawPreview ?? $_('raw_data.default_text'))}</code></pre>
             </div>
           </div>
         {/if}
@@ -334,7 +334,7 @@
     flex: 1;
     padding: 24px;
     padding-bottom: 70px;
-    max-width: 1400px;
+    max-width: min(1920px, 96vw);
     width: 100%;
     box-sizing: border-box;
     margin: 0 auto;

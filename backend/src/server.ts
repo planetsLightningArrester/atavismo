@@ -7,17 +7,14 @@ import { DataServerResponse, GedcomParser } from './types'
 
 const logDir = app.getPath('logs')
 
-/** Logs an info */
 const info = Print.create()
 info.preAppend(`[${color.green}SERV${color.reset}] [${color.cyan}INFO${color.reset}] `)
 info.logToFile(path.join(logDir, 'app.log'))
 
-/** Logs a warning */
 const warn = Print.create()
 warn.preAppend(`[${color.green}SERV${color.reset}] [${color.yellow}WARN${color.reset}] `)
 warn.logToFile(path.join(logDir, 'app.log'))
 
-/** Logs an error */
 const err = Print.create()
 err.preAppend(`[${color.green}SERV${color.reset}] [${color.red}ERROR${color.reset}] `)
 err.logToFile(path.join(logDir, 'app.log'))
@@ -31,10 +28,42 @@ class BasicError {
 }
 
 /**
- * Finds the bundled sample data file path across environments.
+ * Decodes a raw file buffer into a UTF-8 string, automatically handling UTF-16 LE
+ * and UTF-16 BE encodings (commonly emitted by Windows genealogy software with `1 CHAR UNICODE`).
+ */
+export function decodeGedcomBuffer(buf: Buffer): string {
+  if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) {
+    return buf.subarray(2).toString('utf16le')
+  }
+  if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) {
+    const body = buf.subarray(2)
+    const swapped = Buffer.allocUnsafe(body.length)
+    for (let i = 0; i + 1 < body.length; i += 2) {
+      swapped[i] = body[i + 1]
+      swapped[i + 1] = body[i]
+    }
+    return swapped.toString('utf16le')
+  }
+  if (buf.length >= 4 && buf[0] !== 0x00 && buf[1] === 0x00 && buf[2] !== 0x00 && buf[3] === 0x00) {
+    return buf.toString('utf16le')
+  }
+  if (buf.length >= 4 && buf[0] === 0x00 && buf[1] !== 0x00 && buf[2] === 0x00 && buf[3] !== 0x00) {
+    const swapped = Buffer.allocUnsafe(buf.length)
+    for (let i = 0; i + 1 < buf.length; i += 2) {
+      swapped[i] = buf[i + 1]
+      swapped[i + 1] = buf[i]
+    }
+    return swapped.toString('utf16le')
+  }
+  return buf.toString('utf-8')
+}
+
+/**
+ * Finds the bundled sample data file path across development, test, and packaged ASAR environments.
  */
 function findSampleDataPath(): string | undefined {
   const candidatePaths = [
+    path.join(process.resourcesPath, 'sample.gedcom'),
     path.join(__dirname, '..', '..', 'sample.gedcom'),
     path.join(process.cwd(), 'sample.gedcom'),
     path.join(app.getAppPath(), 'sample.gedcom'),
@@ -54,7 +83,6 @@ function findSampleDataPath(): string | undefined {
  * @param win an Electron `BrowserWindow`
  */
 export async function server(win: BrowserWindow): Promise<void> {
-  // Parse GEDCOM from file path or text content
   ipcMain.on('gedcom-data', async (_, ...args) => {
     const input: unknown = args[0]
 
@@ -75,32 +103,27 @@ export async function server(win: BrowserWindow): Promise<void> {
         return
       }
       try {
-        fileContent = fs.readFileSync(samplePath, 'utf-8')
+        fileContent = decodeGedcomBuffer(fs.readFileSync(samplePath))
       } catch (error: unknown) {
         const msg = `Error reading sample file: ${error instanceof Error ? error.message : String(error)}`
         err.log(msg)
         win.webContents.send('gedcom-data', new DataServerResponse(new BasicError(msg), undefined))
         return
       }
-    } else if (input.includes('\n') || input.startsWith('0 ') || input.startsWith('0\t')) {
-      // Direct raw text content
-      fileContent = input
     } else {
-      // File path
-      info.log(`Reading GEDCOM file from path: ${input}`)
-      try {
-        fileContent = fs.readFileSync(input, 'utf-8')
-      } catch (error: unknown) {
-        const msg = `Error reading file '${input}': ${error instanceof Error ? error.message : String(error)}`
-        err.log(msg)
-        win.webContents.send('gedcom-data', new DataServerResponse(new BasicError(msg), undefined))
-        return
-      }
+      // Only accept raw GEDCOM text content over IPC; reject arbitrary disk paths
+      fileContent = input
     }
 
     try {
       info.log(`Parsing GEDCOM content (${fileContent.length} chars)`)
       const parsed = GedcomParser.parse(fileContent)
+      if (parsed.individuals.length === 0 && parsed.families.length === 0) {
+        const emptyErr = new BasicError('Invalid or empty GEDCOM content: no individuals or families found.')
+        warn.log(emptyErr.message)
+        win.webContents.send('gedcom-data', new DataServerResponse(emptyErr, undefined))
+        return
+      }
       info.log(`Successfully parsed ${parsed.individuals.length} individuals and ${parsed.families.length} families`)
       win.webContents.send('gedcom-data', new DataServerResponse(undefined, parsed))
     } catch (error: unknown) {
@@ -110,7 +133,6 @@ export async function server(win: BrowserWindow): Promise<void> {
     }
   })
 
-  // Open native file picker dialog
   ipcMain.on('dialog-open-file', async () => {
     try {
       const result = await dialog.showOpenDialog(win, {
@@ -128,8 +150,18 @@ export async function server(win: BrowserWindow): Promise<void> {
       }
 
       const selectedPath = result.filePaths[0]
-      const fileContent = fs.readFileSync(selectedPath, 'utf-8')
+      const fileContent = decodeGedcomBuffer(fs.readFileSync(selectedPath))
       const parsed = GedcomParser.parse(fileContent)
+      if (parsed.individuals.length === 0 && parsed.families.length === 0) {
+        const emptyErr = new BasicError('Invalid or empty GEDCOM file: no individuals or families found.')
+        warn.log(emptyErr.message)
+        win.webContents.send('dialog-open-file-result', {
+          canceled: false,
+          filePath: selectedPath,
+          data: new DataServerResponse(emptyErr, undefined)
+        })
+        return
+      }
       win.webContents.send('dialog-open-file-result', {
         canceled: false,
         filePath: selectedPath,
@@ -145,12 +177,10 @@ export async function server(win: BrowserWindow): Promise<void> {
     }
   })
 
-  // Listen to check updates requests
   ipcMain.on('check-updates', async () => {
     win.webContents.send('update-results', await getUpdates())
   })
 
-  // Listen to install updates requests
   ipcMain.on('proceed-with-update', async (_, ...args) => {
     try {
       const update: Update = args[0]

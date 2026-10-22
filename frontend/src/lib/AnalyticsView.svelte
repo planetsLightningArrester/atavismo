@@ -601,6 +601,7 @@
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    min-width: 0;
   }
 
   .section-header {
@@ -649,7 +650,7 @@
 
   .kinship-selectors {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 12px;
     align-items: end;
     margin-bottom: 18px;
@@ -657,7 +658,7 @@
 
   @media (max-width: 900px) {
     .kinship-selectors {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
@@ -665,6 +666,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0;
   }
 
   .selector-label {
@@ -683,6 +685,10 @@
     color: #f1f5f9;
     font-size: 13.5px;
     outline: none;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    text-overflow: ellipsis;
   }
 
   .person-select:focus {
@@ -969,7 +975,7 @@
   /* Charts Grid */
   .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
     gap: 20px;
   }
 

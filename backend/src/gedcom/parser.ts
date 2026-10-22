@@ -57,8 +57,13 @@ export class GedcomParser {
       return data
     }
 
-    // Normalize line breaks & strip UTF-8 BOM
-    const cleanText = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    // Normalize line breaks, strip UTF-8/UTF-16 BOMs and interleaved null bytes
+    const cleanText = text
+      .replace(/^[\uFEFF\uFFFE]/, '')
+      .split('\0')
+      .join('')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
     const rawLines = cleanText.split('\n')
 
     const parsedLines: GedcomLine[] = []
@@ -88,6 +93,12 @@ export class GedcomParser {
     if (currentRecordLines.length > 0) {
       GedcomParser.processRecord(currentRecordLines, data)
     }
+
+    // Store raw preview (up to first 200 lines) for Raw GEDCOM inspection
+    data.metadata.rawPreview = rawLines.slice(0, 200).join('\n')
+
+    // Resolve shared NOTE pointers (@N...@)
+    GedcomParser.resolveSharedNotes(data)
 
     // Validate cross-reference pointers
     GedcomParser.validateCrossReferences(data)
@@ -169,6 +180,11 @@ export class GedcomParser {
       case 'SUBM':
         data.submitter = GedcomParser.parseSubmitterRecord(lines)
         break
+      case 'NOTE':
+        if (typeof root.xref === 'string' && root.xref.length > 0) {
+          data.notes[root.xref] = GedcomParser.parseSharedNoteRecord(lines)
+        }
+        break
       case 'TRLR':
         // Trailer record marks EOF
         break
@@ -248,7 +264,14 @@ export class GedcomParser {
             indi.surname = surnameMatch[1].trim()
             indi.givenName = line.value.replace(/\/[^/]+\//, '').trim()
           } else {
-            indi.givenName = line.value.trim()
+            const cleaned = line.value.replace(/\//g, '').trim()
+            const tokens = cleaned.split(/\s+/).filter(t => t.length > 0)
+            if (tokens.length >= 2) {
+              indi.surname = tokens[tokens.length - 1]
+              indi.givenName = tokens.slice(0, -1).join(' ')
+            } else {
+              indi.givenName = cleaned
+            }
           }
         } else if (line.tag === 'SEX' && line.value !== undefined) {
           const val = line.value.trim().toUpperCase()
@@ -665,6 +688,67 @@ export class GedcomParser {
     }
 
     return subm
+  }
+
+  /**
+   * Parses a top-level shared NOTE record (`0 @N1@ NOTE ...`).
+   */
+  private static parseSharedNoteRecord(lines: GedcomLine[]): string {
+    let text = lines[0].value ?? ''
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i]
+      if (line.level === 1 && (line.tag === 'CONT' || line.tag === 'CONC')) {
+        const val = line.value ?? ''
+        if (line.tag === 'CONT') {
+          text = (text.length > 0 ? text + '\n' : '') + val
+        } else {
+          text = text + val
+        }
+      }
+    }
+    return text
+  }
+
+  /**
+   * Resolves `@N...@` pointer references in entity and event notes against `data.notes`.
+   */
+  private static resolveSharedNotes(data: GedcomData): void {
+    if (Object.keys(data.notes).length === 0) return
+
+    const resolveText = (note: string | undefined): string | undefined => {
+      if (typeof note !== 'string' || note.length === 0) return note
+      const trimmed = note.trim()
+      if (trimmed.startsWith('@') && trimmed.endsWith('@') && data.notes[trimmed] !== undefined) {
+        return data.notes[trimmed]
+      }
+      return note.replace(/@[^@\s]+@/g, match => data.notes[match] ?? match)
+    }
+
+    for (const indi of data.individuals) {
+      indi.notes = resolveText(indi.notes)
+      for (const ev of indi.events) {
+        ev.notes = resolveText(ev.notes)
+      }
+    }
+
+    for (const fam of data.families) {
+      fam.notes = resolveText(fam.notes)
+      for (const ev of fam.events) {
+        ev.notes = resolveText(ev.notes)
+      }
+    }
+
+    for (const src of Object.values(data.sources)) {
+      src.notes = resolveText(src.notes)
+    }
+
+    for (const repo of Object.values(data.repositories)) {
+      repo.notes = resolveText(repo.notes)
+    }
+
+    for (const media of Object.values(data.media)) {
+      media.notes = resolveText(media.notes)
+    }
   }
 
   /**

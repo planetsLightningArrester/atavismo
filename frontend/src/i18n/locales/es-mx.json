@@ -73,7 +73,10 @@
     "export_png": "Exportar PNG",
     "generations": "Generaciones",
     "quick_jump": "Saltar a persona...",
-    "no_descendants": "Sin descendientes registrados"
+    "no_descendants": "Sin descendientes registrados",
+    "father": "Padre",
+    "mother": "Madre",
+    "focus_badge": "FOCO"
   },
   "tree_overview": {
     "summary": "Se cargaron con éxito <b>{individuals_amount} individuos</b> agrupados en <b>{families_amount} familias</b> a lo largo de <b>{generations_amount} generaciones</b>",
@@ -125,6 +128,7 @@
     "quay_1": "Cuestionable (1)",
     "quay_2": "Secundaria (2)",
     "quay_3": "Primaria (3)",
+    "showing_first_n": "Mostrando los primeros 100 de {total} registros. Use la búsqueda para refinar.",
     "event_types": {
       "BIRT": "Nacimiento",
       "DEAT": "Fallecimiento",
