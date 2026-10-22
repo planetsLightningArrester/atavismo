@@ -1,6 +1,6 @@
 <script lang="ts">
   import { _ } from 'svelte-i18n'
-  import { cleanName, formatLifespan, fuzzyMatchesQuery } from './common'
+  import { cleanName, formatLifespan, fuzzyMatchesQuery, generateNextId } from './common'
 
   export let individuals: Individual[] = []
   export let families: Family[] = []
@@ -9,6 +9,7 @@
   export let media: Record<string, MediaRecord> = {}
   export let selectedIndividualId: string = ''
   export let onExploreInTree: (() => void) | null = null
+  export let onDatasetChanged: (() => void) | null = null
 
   type EntityView = 'individuals' | 'sources' | 'repositories' | 'media'
   type VitalFilter = 'ALL' | 'LIVING' | 'DECEASED'
@@ -27,6 +28,187 @@
   let selectedSourceId = ''
   let selectedRepoId = ''
   let selectedMediaId = ''
+
+  let isEditing = false
+  let isCreating = false
+  let editId = ''
+  let editGivenName = ''
+  let editSurname = ''
+  let editNick = ''
+  let editSex: 'M' | 'F' | 'U' = 'U'
+  let editBirthDate = ''
+  let editBirthPlace = ''
+  let editDeathDate = ''
+  let editDeathPlace = ''
+  let editNotes = ''
+
+  function extractYearFromString(val: string): number | undefined {
+    const m = /\b(1\d{3}|20\d{2})\b/.exec(val)
+    return m !== null ? parseInt(m[1], 10) : undefined
+  }
+
+  function openEditModal(person: Individual): void {
+    editId = person.id
+    editGivenName = person.givenName ?? ''
+    editSurname = person.surname ?? ''
+    editNick = person.nick ?? ''
+    editSex = person.sex ?? 'U'
+    editBirthDate = person.birth?.date ?? ''
+    editBirthPlace = person.birth?.place ?? ''
+    editDeathDate = person.death?.date ?? ''
+    editDeathPlace = person.death?.place ?? ''
+    editNotes = person.notes ?? ''
+    isCreating = false
+    isEditing = true
+  }
+
+  function openCreateModal(): void {
+    editId = generateNextId(individuals.map((i) => i.id), 'I')
+    editGivenName = ''
+    editSurname = ''
+    editNick = ''
+    editSex = 'U'
+    editBirthDate = ''
+    editBirthPlace = ''
+    editDeathDate = ''
+    editDeathPlace = ''
+    editNotes = ''
+    isEditing = false
+    isCreating = true
+  }
+
+  function saveEdit(): void {
+    const person = individuals.find((i) => i.id === editId)
+    if (person !== undefined) {
+      person.givenName = editGivenName.trim()
+      person.surname = editSurname.trim()
+      person.name = `${person.givenName} /${person.surname}/`.trim()
+      person.nick = editNick.trim()
+      person.sex = editSex
+      person.notes = editNotes.trim()
+
+      const birthYear = extractYearFromString(editBirthDate)
+      if (editBirthDate.length > 0 || editBirthPlace.length > 0) {
+        if (person.birth === undefined) {
+          person.birth = { type: 'BIRT' }
+        }
+        person.birth.date = editBirthDate
+        person.birth.place = editBirthPlace
+        person.birth.year = birthYear
+
+        let birtEv = person.events.find((e) => e.type === 'BIRT')
+        if (birtEv === undefined) {
+          birtEv = { type: 'BIRT', citations: [] }
+          person.events.unshift(birtEv)
+        }
+        birtEv.date = editBirthDate
+        birtEv.place = editBirthPlace
+        birtEv.year = birthYear
+      } else {
+        person.birth = undefined
+        person.events = person.events.filter((e) => e.type !== 'BIRT')
+      }
+
+      const deathYear = extractYearFromString(editDeathDate)
+      if (editDeathDate.length > 0 || editDeathPlace.length > 0) {
+        if (person.death === undefined) {
+          person.death = { type: 'DEAT' }
+        }
+        person.death.date = editDeathDate
+        person.death.place = editDeathPlace
+        person.death.year = deathYear
+
+        let deatEv = person.events.find((e) => e.type === 'DEAT')
+        if (deatEv === undefined) {
+          deatEv = { type: 'DEAT', citations: [] }
+          person.events.push(deatEv)
+        }
+        deatEv.date = editDeathDate
+        deatEv.place = editDeathPlace
+        deatEv.year = deathYear
+      } else {
+        person.death = undefined
+        person.events = person.events.filter((e) => e.type !== 'DEAT')
+      }
+
+      individuals = [...individuals]
+      isEditing = false
+      if (onDatasetChanged !== null) onDatasetChanged()
+    }
+  }
+
+  function saveCreate(): void {
+    const newIndi: Individual = {
+      id: editId,
+      givenName: editGivenName.trim(),
+      surname: editSurname.trim(),
+      name: `${editGivenName.trim()} /${editSurname.trim()}/`.trim(),
+      nick: editNick.trim(),
+      sex: editSex,
+      notes: editNotes.trim(),
+      fams: [],
+      famc: [],
+      events: [],
+      citations: [],
+      mediaIds: [],
+    }
+
+    const birthYear = extractYearFromString(editBirthDate)
+    if (editBirthDate.length > 0 || editBirthPlace.length > 0) {
+      newIndi.birth = {
+        type: 'BIRT',
+        date: editBirthDate,
+        place: editBirthPlace,
+        year: birthYear,
+      }
+      newIndi.events.push({
+        type: 'BIRT',
+        date: editBirthDate,
+        place: editBirthPlace,
+        year: birthYear,
+        citations: [],
+      })
+    }
+
+    const deathYear = extractYearFromString(editDeathDate)
+    if (editDeathDate.length > 0 || editDeathPlace.length > 0) {
+      newIndi.death = {
+        type: 'DEAT',
+        date: editDeathDate,
+        place: editDeathPlace,
+        year: deathYear,
+      }
+      newIndi.events.push({
+        type: 'DEAT',
+        date: editDeathDate,
+        place: editDeathPlace,
+        year: deathYear,
+        citations: [],
+      })
+    }
+
+    individuals = [newIndi, ...individuals]
+    selectedIndividualId = newIndi.id
+    isCreating = false
+    if (onDatasetChanged !== null) onDatasetChanged()
+  }
+
+  function deletePerson(id: string): void {
+    // eslint-disable-next-line no-alert
+    if (window.confirm($_('records.confirm_delete'))) {
+      individuals = individuals.filter((i) => i.id !== id)
+      for (const fam of families) {
+        if (fam.husbandId === id) fam.husbandId = undefined
+        if (fam.wifeId === id) fam.wifeId = undefined
+        fam.childrenIds = fam.childrenIds.filter((cid) => cid !== id)
+      }
+      families = [...families]
+      if (selectedIndividualId === id) {
+        selectedIndividualId = individuals[0]?.id ?? ''
+      }
+      if (onDatasetChanged !== null) onDatasetChanged()
+    }
+  }
 
   const CURRENT_YEAR = new Date().getFullYear()
 
@@ -563,6 +745,14 @@
           <option value="birth_asc">{$_('records.sort_birth_asc')}</option>
           <option value="birth_desc">{$_('records.sort_birth_desc')}</option>
         </select>
+
+        <button
+          class="add-person-btn"
+          data-testid="add-person-btn"
+          on:click={openCreateModal}
+        >
+          ➕ {$_('records.add_person')}
+        </button>
       </div>
     {/if}
   </div>
@@ -659,11 +849,31 @@
                   <div class="inspector-alias">“{selectedPerson.nick}”</div>
                 {/if}
               </div>
-              {#if onExploreInTree !== null}
-                <button class="tree-jump-btn" data-testid="inspector-view-in-tree-btn" on:click={onExploreInTree}>
-                  🌿 {$_('records.view_in_tree')}
+              <div class="inspector-controls">
+                <button
+                  class="action-pill-btn edit"
+                  data-testid="inspector-edit-person-btn"
+                  on:click={() => {
+                    openEditModal(selectedPerson)
+                  }}
+                >
+                  ✏️ {$_('records.edit_person')}
                 </button>
-              {/if}
+                <button
+                  class="action-pill-btn delete"
+                  data-testid="inspector-delete-person-btn"
+                  on:click={() => {
+                    deletePerson(selectedPerson.id)
+                  }}
+                >
+                  🗑️
+                </button>
+                {#if onExploreInTree !== null}
+                  <button class="tree-jump-btn" data-testid="inspector-view-in-tree-btn" on:click={onExploreInTree}>
+                    🌿 {$_('records.view_in_tree')}
+                  </button>
+                {/if}
+              </div>
             </div>
 
             <!-- Interactive Chronological Life Timeline -->
@@ -1005,6 +1215,166 @@
     </div>
   {/if}
 </div>
+
+{#if isEditing || isCreating}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div
+    class="modal-backdrop"
+    on:click|self={() => {
+      isEditing = false
+      isCreating = false
+    }}
+  >
+    <div class="edit-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">{isCreating ? $_('records.add_person') : $_('records.edit_person')}</h3>
+        <button
+          class="modal-close-btn"
+          on:click={() => {
+            isEditing = false
+            isCreating = false
+          }}>&times;</button
+        >
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-id">ID</label>
+            <input id="edit-id" type="text" class="form-input" disabled value={editId} />
+          </div>
+          <div class="form-group">
+            <label for="edit-gender">{$_('records.gender')}</label>
+            <select id="edit-gender" class="form-input" bind:value={editSex} data-testid="edit-person-sex">
+              <option value="U">{$_('main_page.unknown_sex')}</option>
+              <option value="M">{$_('main_page.filter_males')}</option>
+              <option value="F">{$_('main_page.filter_females')}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-given-name">{$_('records.given_name')}</label>
+            <input
+              id="edit-given-name"
+              type="text"
+              class="form-input"
+              bind:value={editGivenName}
+              placeholder="e.g. John"
+              data-testid="edit-person-given-name"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-surname">{$_('records.surname')}</label>
+            <input
+              id="edit-surname"
+              type="text"
+              class="form-input"
+              bind:value={editSurname}
+              placeholder="e.g. Smith"
+              data-testid="edit-person-surname"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-nick">{$_('records.nickname')}</label>
+          <input
+            id="edit-nick"
+            type="text"
+            class="form-input"
+            bind:value={editNick}
+            placeholder="e.g. Jack"
+            data-testid="edit-person-nickname"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-birt-date">{$_('records.birth_date')}</label>
+            <input
+              id="edit-birt-date"
+              type="text"
+              class="form-input"
+              bind:value={editBirthDate}
+              placeholder="e.g. 15 JAN 1900"
+              data-testid="edit-person-birth-date"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-birt-place">{$_('records.birth_place')}</label>
+            <input
+              id="edit-birt-place"
+              type="text"
+              class="form-input"
+              bind:value={editBirthPlace}
+              placeholder="e.g. Boston, MA"
+              data-testid="edit-person-birth-place"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-deat-date">{$_('records.death_date')}</label>
+            <input
+              id="edit-deat-date"
+              type="text"
+              class="form-input"
+              bind:value={editDeathDate}
+              placeholder="e.g. 20 MAR 1975"
+              data-testid="edit-person-death-date"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-deat-place">{$_('records.death_place')}</label>
+            <input
+              id="edit-deat-place"
+              type="text"
+              class="form-input"
+              bind:value={editDeathPlace}
+              placeholder="e.g. New York, NY"
+              data-testid="edit-person-death-place"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-notes">{$_('records.notes_field')}</label>
+          <textarea
+            id="edit-notes"
+            class="form-textarea"
+            rows="3"
+            bind:value={editNotes}
+            placeholder="Biographical notes..."
+            data-testid="edit-person-notes"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="modal-btn secondary"
+          on:click={() => {
+            isEditing = false
+            isCreating = false
+          }}
+          data-testid="cancel-edit-btn"
+        >
+          {$_('records.cancel')}
+        </button>
+        <button
+          class="modal-btn primary"
+          on:click={isCreating ? saveCreate : saveEdit}
+          data-testid="save-edit-btn"
+        >
+          {$_('records.save_changes')}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .records-container {
@@ -1784,5 +2154,224 @@
     max-height: 150px;
     overflow-y: auto;
     white-space: pre-wrap;
+  }
+
+  .add-person-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .add-person-btn:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .inspector-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .action-pill-btn {
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .action-pill-btn.edit {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+  }
+
+  .action-pill-btn.edit:hover {
+    background: rgba(59, 130, 246, 0.3);
+  }
+
+  .action-pill-btn.delete {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+  }
+
+  .action-pill-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.3);
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  .edit-modal-card {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: modalFadeIn 0.2s ease-out;
+  }
+
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .modal-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #f3f4f6;
+  }
+
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .modal-close-btn:hover {
+    color: #ffffff;
+  }
+
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+  }
+
+  .form-input,
+  .form-textarea {
+    background: #1f2937;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #f3f4f6;
+    padding: 8px 12px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .form-input:focus,
+  .form-textarea:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    font-family: inherit;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .modal-btn {
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .modal-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e0;
+  }
+
+  .modal-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .modal-btn.primary {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+
+  .modal-btn.primary:hover {
+    background: #2563eb;
   }
 </style>

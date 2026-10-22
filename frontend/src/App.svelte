@@ -1,5 +1,6 @@
 <script lang="ts">
   import './i18n'
+  import { onMount } from 'svelte'
   import { _ } from 'svelte-i18n'
   import Header from './lib/Header.svelte'
   import MetricsCard from './lib/MetricsCard.svelte'
@@ -7,6 +8,7 @@
   import RecordsList from './lib/RecordsList.svelte'
   import AnalyticsView from './lib/AnalyticsView.svelte'
   import Footer from './lib/Footer.svelte'
+  import { recalculateStats } from './lib/common'
   import { Icon, Styles } from '@sveltestrap/sveltestrap'
 
   // Svelte generates innerHTML assignments breaking CSP "require-trusted-types-for 'script'" in production code
@@ -31,11 +33,100 @@
   let gedcomData: GedcomData | undefined
   let rawText = ''
   let loadedFileName = ''
+  let loadedFilePath: string | undefined
+  let isDirty = false
+  let saveToastMessage = ''
   let activeTab: 'overview' | 'tree' | 'records' | 'analytics' | 'raw' = 'overview'
   let selectedIndividualId = ''
   let isLoading = false
   let errorMessage = ''
   let isDragging = false
+
+  onMount(() => {
+    const handleKeydown = (e: KeyboardEvent): void => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        if (gedcomData !== undefined) {
+          void saveCurrentFile()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeydown)
+    return () => {
+      window.removeEventListener('keydown', handleKeydown)
+    }
+  })
+
+  function handleDatasetChanged(): void {
+    if (gedcomData === undefined) return
+    isDirty = true
+    gedcomData.stats = recalculateStats(
+      gedcomData.individuals,
+      gedcomData.families,
+      gedcomData.sources,
+      gedcomData.repositories,
+      gedcomData.media
+    )
+    gedcomData = { ...gedcomData }
+  }
+
+  async function saveCurrentFile(): Promise<void> {
+    if (gedcomData === undefined) return
+    if (loadedFilePath !== undefined && loadedFilePath.length > 0 && !loadedFilePath.includes('sample_dataset.ged')) {
+      isLoading = true
+      try {
+        const ser = await window.api.serializeGedcom(gedcomData)
+        if (ser.success && typeof ser.content === 'string') {
+          const res = await window.api.saveGedcomFile(loadedFilePath, ser.content)
+          if (res.success) {
+            isDirty = false
+            saveToastMessage = $_('main_page.saved_successfully')
+            setTimeout(() => {
+              saveToastMessage = ''
+            }, 3000)
+          } else {
+            errorMessage = res.error ?? $_('main_page.save_error')
+          }
+        }
+      } catch (err: unknown) {
+        errorMessage = err instanceof Error ? err.message : String(err)
+      } finally {
+        isLoading = false
+      }
+    } else {
+      await saveAsFile()
+    }
+  }
+
+  async function saveAsFile(): Promise<void> {
+    if (gedcomData === undefined) return
+    try {
+      const defaultName = loadedFileName.length > 0 ? loadedFileName : 'family_tree.ged'
+      const saveDialogRes = await window.api.saveFileDialog(defaultName)
+      if (!saveDialogRes.canceled && typeof saveDialogRes.filePath === 'string') {
+        isLoading = true
+        const ser = await window.api.serializeGedcom(gedcomData)
+        if (ser.success && typeof ser.content === 'string') {
+          const res = await window.api.saveGedcomFile(saveDialogRes.filePath, ser.content)
+          if (res.success) {
+            loadedFilePath = saveDialogRes.filePath
+            loadedFileName = saveDialogRes.filePath.split(/[/\\]/).pop() ?? 'family_tree.ged'
+            isDirty = false
+            saveToastMessage = $_('main_page.saved_successfully')
+            setTimeout(() => {
+              saveToastMessage = ''
+            }, 3000)
+          } else {
+            errorMessage = res.error ?? $_('main_page.save_error')
+          }
+        }
+      }
+    } catch (err: unknown) {
+      errorMessage = err instanceof Error ? err.message : String(err)
+    } finally {
+      isLoading = false
+    }
+  }
 
   // Updates
   let update: Update | undefined
@@ -53,8 +144,9 @@
     if (typeof update !== 'undefined') window.api.proceedWithUpdate(update)
   }
 
-  function handleServerResponse(response: DataServerResponse, filename?: string): void {
+  function handleServerResponse(response: DataServerResponse, filename?: string, filePath?: string): void {
     isLoading = false
+    isDirty = false
     if (response.error !== undefined) {
       errorMessage = response.error.message
       console.error('GEDCOM Parse Error:', response.error)
@@ -62,6 +154,7 @@
       errorMessage = ''
       gedcomData = response.result
       if (typeof filename === 'string' && filename.length > 0) loadedFileName = filename
+      if (typeof filePath === 'string' && filePath.length > 0) loadedFilePath = filePath
       if (gedcomData.individuals.length > 0) {
         const connected = gedcomData.individuals.find((i) => i.famc.length > 0 && i.fams.length > 0)
         selectedIndividualId = connected?.id ?? gedcomData.individuals[0].id
@@ -75,6 +168,7 @@
     try {
       const response = await window.api.loadSampleData()
       handleServerResponse(response, 'sample_dataset.ged')
+      loadedFilePath = undefined
     } catch (err: unknown) {
       isLoading = false
       errorMessage = err instanceof Error ? err.message : String(err)
@@ -88,7 +182,7 @@
       const result = await window.api.openFileDialog()
       if (!result.canceled && result.data !== undefined) {
         const name = typeof result.filePath === 'string' && result.filePath.length > 0 ? result.filePath.split(/[/\\]/).pop() : 'family_tree.ged'
-        handleServerResponse(result.data, name)
+        handleServerResponse(result.data, name, result.filePath)
       } else {
         isLoading = false
       }
@@ -153,7 +247,16 @@
 
 <div class="app-root" role="region" aria-label="Atavismo" on:dragover={handleDragOver} on:dragleave={handleDragLeave} on:drop={handleDrop}>
   <!-- Top App Header -->
-  <Header bind:activeTab onOpenFile={openNativeFileDialog} onLoadSample={loadSampleTree} hasData={gedcomData !== undefined} fileName={loadedFileName} />
+  <Header
+    bind:activeTab
+    onOpenFile={openNativeFileDialog}
+    onLoadSample={loadSampleTree}
+    hasData={gedcomData !== undefined}
+    fileName={loadedFileName}
+    isDirty={isDirty}
+    onSaveFile={saveCurrentFile}
+    onSaveAsFile={saveAsFile}
+  />
 
   <main class="main-content">
     {#if isLoading}
@@ -166,6 +269,12 @@
     {#if typeof errorMessage === 'string' && errorMessage.length > 0}
       <div class="error-banner">
         ⚠️ {errorMessage}
+      </div>
+    {/if}
+
+    {#if saveToastMessage.length > 0}
+      <div class="save-toast" data-testid="save-toast">
+        ✅ {saveToastMessage}
       </div>
     {/if}
 
@@ -260,8 +369,8 @@
         {:else if activeTab === 'records'}
           <div class="tab-pane">
             <RecordsList
-              individuals={gedcomData.individuals}
-              families={gedcomData.families}
+              bind:individuals={gedcomData.individuals}
+              bind:families={gedcomData.families}
               sources={gedcomData.sources}
               repositories={gedcomData.repositories}
               media={gedcomData.media}
@@ -269,6 +378,7 @@
               onExploreInTree={() => {
                 activeTab = 'tree'
               }}
+              onDatasetChanged={handleDatasetChanged}
             />
           </div>
         {:else if activeTab === 'analytics'}
@@ -381,6 +491,19 @@
     border-radius: 8px;
     margin-bottom: 20px;
     font-size: 14px;
+  }
+
+  .save-toast {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid #10b981;
+    color: #6ee7b7;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
   }
 
   .welcome-hero {

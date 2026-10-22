@@ -2,6 +2,7 @@ import type { GedcomData } from './gedcom/model'
 
 export * from './gedcom/model'
 export * from './gedcom/parser'
+export * from './gedcom/serializer'
 
 /** The output result to send to the client via IPC */
 export class DataServerResponse {

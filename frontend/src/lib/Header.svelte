@@ -7,6 +7,9 @@
   export let onLoadSample: () => void
   export let hasData: boolean = false
   export let fileName: string = ''
+  export let isDirty: boolean = false
+  export let onSaveFile: (() => void) | null = null
+  export let onSaveAsFile: (() => void) | null = null
 </script>
 
 <header class="app-header">
@@ -16,7 +19,14 @@
       <div>
         <h1 class="brand-title" data-testid="main-page-title">{$_('main_page.title')}</h1>
         {#if fileName.length > 0}
-          <div class="brand-file" title={fileName}>📄 {fileName}</div>
+          <div class="brand-file" title={fileName}>
+            📄 {fileName}
+            {#if isDirty}
+              <span class="unsaved-badge" data-testid="unsaved-badge" title={$_('main_page.unsaved_changes')}>
+                ● {$_('main_page.unsaved_changes')}
+              </span>
+            {/if}
+          </div>
         {/if}
       </div>
     </div>
@@ -82,6 +92,26 @@
 
   <div class="header-right">
     <div class="actions">
+      {#if hasData && onSaveFile !== null}
+        <button
+          class="action-btn success"
+          class:pulse={isDirty}
+          on:click={onSaveFile}
+          data-testid="save-file-button"
+          title="Ctrl+S / Cmd+S"
+        >
+          💾 {$_('main_page.save_file')}
+        </button>
+      {/if}
+      {#if hasData && onSaveAsFile !== null}
+        <button
+          class="action-btn outline"
+          on:click={onSaveAsFile}
+          data-testid="save-as-button"
+        >
+          📤 {$_('main_page.save_as')}
+        </button>
+      {/if}
       <button class="action-btn primary" on:click={onOpenFile} data-testid="open-file-button">
         📂 {$_('main_page.open_file')}
       </button>
@@ -222,6 +252,50 @@
 
   .action-btn.secondary:hover {
     background: rgba(255, 255, 255, 0.15);
+  }
+
+  .unsaved-badge {
+    color: #fbbf24;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 6px;
+    animation: pulseGlow 2s infinite ease-in-out;
+  }
+
+  .action-btn.success {
+    background: #059669;
+    border: 1px solid #10b981;
+    color: #ffffff;
+  }
+
+  .action-btn.success:hover {
+    background: #047857;
+  }
+
+  .action-btn.success.pulse {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  }
+
+  .action-btn.outline {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e5e7eb;
+  }
+
+  .action-btn.outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  @keyframes pulseGlow {
+    0%,
+    100% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 1;
+      text-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+    }
   }
 
   .locales-wrapper {

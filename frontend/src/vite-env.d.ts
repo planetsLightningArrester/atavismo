@@ -18,6 +18,24 @@ interface OpenDialogResponse {
   data?: DataServerResponse
 }
 
+interface SaveDialogResponse {
+  canceled: boolean
+  filePath?: string
+  error?: string
+}
+
+interface SaveFileResult {
+  success: boolean
+  filePath?: string
+  error?: string
+}
+
+interface SerializeResult {
+  success: boolean
+  content?: string
+  error?: string
+}
+
 /** Represents event details such as birth, death, or marriage. */
 interface EventDetails {
   date?: string
@@ -202,6 +220,18 @@ interface Window {
      * Opens native file picker dialog
      */
     openFileDialog: () => Promise<OpenDialogResponse>
+    /**
+     * Opens native file save dialog
+     */
+    saveFileDialog: (defaultName?: string) => Promise<SaveDialogResponse>
+    /**
+     * Saves raw GEDCOM text to file
+     */
+    saveGedcomFile: (filePath: string, content: string) => Promise<SaveFileResult>
+    /**
+     * Serializes dataset to GEDCOM text
+     */
+    serializeGedcom: (data: GedcomData) => Promise<SerializeResult>
     /**
      * Check if there are updates
      */

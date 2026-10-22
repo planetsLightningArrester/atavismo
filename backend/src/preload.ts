@@ -19,6 +19,24 @@ export interface OpenDialogResponse {
   data?: DataServerResponse
 }
 
+export interface SaveDialogResponse {
+  canceled: boolean
+  filePath?: string
+  error?: string
+}
+
+export interface SaveFileResult {
+  success: boolean
+  filePath?: string
+  error?: string
+}
+
+export interface SerializeResult {
+  success: boolean
+  content?: string
+  error?: string
+}
+
 /** Context bridge. Map the IPC communication between the client and the server */
 contextBridge.exposeInMainWorld('api', {
   /**
@@ -53,6 +71,42 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.send('dialog-open-file')
     return await new Promise<OpenDialogResponse>(resolve => {
       ipcRenderer.once('dialog-open-file-result', (_, result: OpenDialogResponse) => {
+        resolve(result)
+      })
+    })
+  },
+
+  /**
+   * Opens native OS save file picker dialog for saving GEDCOM files
+   */
+  saveFileDialog: async (defaultName?: string): Promise<SaveDialogResponse> => {
+    ipcRenderer.send('dialog-save-file', defaultName)
+    return await new Promise<SaveDialogResponse>(resolve => {
+      ipcRenderer.once('dialog-save-file-result', (_, result: SaveDialogResponse) => {
+        resolve(result)
+      })
+    })
+  },
+
+  /**
+   * Saves raw GEDCOM content to the specified file path on disk
+   */
+  saveGedcomFile: async (filePath: string, content: string): Promise<SaveFileResult> => {
+    ipcRenderer.send('save-gedcom-file', { filePath, content })
+    return await new Promise<SaveFileResult>(resolve => {
+      ipcRenderer.once('save-gedcom-file-result', (_, result: SaveFileResult) => {
+        resolve(result)
+      })
+    })
+  },
+
+  /**
+   * Serializes in-memory GedcomData dataset to standard GEDCOM text
+   */
+  serializeGedcom: async (data: unknown): Promise<SerializeResult> => {
+    ipcRenderer.send('gedcom-serialize', data)
+    return await new Promise<SerializeResult>(resolve => {
+      ipcRenderer.once('gedcom-serialize-result', (_, result: SerializeResult) => {
         resolve(result)
       })
     })

@@ -3,7 +3,7 @@ import path from 'path'
 import { Print, color } from 'printaeu'
 import { app, type BrowserWindow, ipcMain, dialog } from 'electron'
 import { type Update, getUpdates, installUpdate } from './update'
-import { DataServerResponse, GedcomParser } from './types'
+import { DataServerResponse, GedcomParser, GedcomSerializer, type GedcomData } from './types'
 
 const logDir = app.getPath('logs')
 
@@ -174,6 +174,62 @@ export async function server(win: BrowserWindow): Promise<void> {
         canceled: false,
         data: new DataServerResponse(new BasicError(msg), undefined)
       })
+    }
+  })
+
+  ipcMain.on('dialog-save-file', async (_, defaultName?: string) => {
+    try {
+      const result = await dialog.showSaveDialog(win, {
+        title: 'Save GEDCOM File',
+        defaultPath: typeof defaultName === 'string' && defaultName.length > 0 ? defaultName : 'family_tree.ged',
+        filters: [
+          { name: 'GEDCOM Files (*.ged, *.gedcom)', extensions: ['ged', 'gedcom'] },
+          { name: 'All Files (*.*)', extensions: ['*'] }
+        ]
+      })
+      win.webContents.send('dialog-save-file-result', {
+        canceled: result.canceled,
+        filePath: result.filePath
+      })
+    } catch (error: unknown) {
+      const msg = `Save dialog error: ${error instanceof Error ? error.message : String(error)}`
+      err.log(msg)
+      win.webContents.send('dialog-save-file-result', {
+        canceled: true,
+        error: msg
+      })
+    }
+  })
+
+  ipcMain.on('save-gedcom-file', async (_, args: { filePath: string, content: string }) => {
+    try {
+      if (typeof args?.filePath !== 'string' || typeof args?.content !== 'string') {
+        throw new Error('Invalid arguments passed to save-gedcom-file')
+      }
+      fs.writeFileSync(args.filePath, args.content, 'utf-8')
+      info.log(`Successfully saved GEDCOM file (${args.content.length} characters) to ${args.filePath}`)
+      win.webContents.send('save-gedcom-file-result', {
+        success: true,
+        filePath: args.filePath
+      })
+    } catch (error: unknown) {
+      const msg = `Failed to save GEDCOM file: ${error instanceof Error ? error.message : String(error)}`
+      err.log(msg)
+      win.webContents.send('save-gedcom-file-result', {
+        success: false,
+        error: msg
+      })
+    }
+  })
+
+  ipcMain.on('gedcom-serialize', (_, data: GedcomData) => {
+    try {
+      const serialized = GedcomSerializer.serialize(data)
+      win.webContents.send('gedcom-serialize-result', { success: true, content: serialized })
+    } catch (error: unknown) {
+      const msg = `Serialization error: ${error instanceof Error ? error.message : String(error)}`
+      err.log(msg)
+      win.webContents.send('gedcom-serialize-result', { success: false, error: msg })
     }
   })
 

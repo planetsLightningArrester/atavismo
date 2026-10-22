@@ -293,4 +293,51 @@ test.describe.serial('Atavismo E2E Tests', () => {
     await expect(window.getByTestId('top-places-list')).toBeVisible()
     expect(await window.getByTestId('top-place-item').count()).toBeGreaterThan(0)
   })
+
+  test('tests Phase 6 in-app record creation, editing, unsaved badge, and serializer export', async () => {
+    // 1. Navigate to Records tab
+    const recordsTab = window.getByTestId('tab-records')
+    await recordsTab.click()
+    await expect(window.locator('.records-table')).toBeVisible()
+
+    // 2. Open Add Person modal
+    const addBtn = window.getByTestId('add-person-btn')
+    await expect(addBtn).toBeVisible()
+    await addBtn.click()
+
+    const modal = window.locator('.edit-modal-card')
+    await expect(modal).toBeVisible()
+
+    // 3. Fill out new individual details
+    await window.getByTestId('edit-person-given-name').fill('Arthur')
+    await window.getByTestId('edit-person-surname').fill('Pendragon')
+    await window.getByTestId('edit-person-nickname').fill('Once and Future King')
+    await window.getByTestId('edit-person-sex').selectOption('M')
+    await window.getByTestId('edit-person-birth-date').fill('15 JAN 0500')
+    await window.getByTestId('edit-person-birth-place').fill('Tintagel, Cornwall')
+    await window.getByTestId('edit-person-notes').fill('Legendary British leader and king of Camelot.')
+
+    // 4. Save new individual
+    await window.getByTestId('save-edit-btn').click()
+    await expect(modal).not.toBeVisible()
+
+    // 5. Verify Unsaved Changes badge appeared in the header
+    await expect(window.getByTestId('unsaved-badge')).toBeVisible()
+
+    // 6. Verify newly created person is selected in Inspector
+    await expect(window.locator('.inspector-title')).toContainText('Arthur Pendragon')
+    await expect(window.locator('.inspector-alias')).toContainText('Once and Future King')
+
+    // 7. Test editing existing individual
+    await window.getByTestId('inspector-edit-person-btn').click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-person-nickname').fill('King of Camelot')
+    await window.getByTestId('save-edit-btn').click()
+    await expect(modal).not.toBeVisible()
+    await expect(window.locator('.inspector-alias')).toContainText('King of Camelot')
+
+    // 8. Verify save buttons are active in header
+    await expect(window.getByTestId('save-file-button')).toBeVisible()
+    await expect(window.getByTestId('save-as-button')).toBeVisible()
+  })
 })
