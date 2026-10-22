@@ -11,23 +11,30 @@
 
 # Contenido
 
-- [👣  Atavismo](#-atavismo)
+- [👣 Atavismo](#-atavismo)
 - [Contenido](#contenido)
   - [✨ Características](#-características)
   - [🚀 Uso](#-uso)
   - [💻 Desarrollo](#-desarrollo)
     - [⚙️ Configuración](#️-configuración)
-    - [🧪 Pruebas](#-pruebas)
+    - [🧪 Pruebas y Rendimiento](#-pruebas-y-rendimiento)
   - [📜 Licencia](#-licencia)
 
 ## ✨ Características
 
-- **Motor de análisis GEDCOM sin librerías de terceros**: Analizador propio en TypeScript puro para GEDCOM 5.5 y 5.5.1 sin dependencias externas.
-- **Visualizador interactivo de árbol genealógico**: Explore individuos, cónyuges, padres e hijos con navegación intuitiva de linaje.
-- **Búsqueda y filtros instantáneos**: Busque miles de registros por nombre, apellido o ID con filtros en tiempo real.
-- **Inspector de registros**: Información biográfica, fechas de nacimiento/defunción, matrimonios y notas detalladas.
+- **Motor de análisis GEDCOM sin librerías de terceros**: Analizador AST propio en TypeScript puro compatible con GEDCOM 5.5, 5.5.1 y 7.0 (`INDI`, `FAM`, `SOUR`, `REPO`, `OBJE`, `SUBM`, citas con calidad `QUAY`, notas `CONT`/`CONC` y diagnósticos de referencias cruzadas).
+- **Visualizaciones interactivas del árbol (D3.js / SVG)**:
+  - **Árbol de Ascendencia (Pedigree)**, **Árbol de Descendientes**, **Gráfico Reloj de Arena**, **Gráfico en Abanico (180° y Rueda Completa 360°)** y **Unidades Familiares**.
+  - Panorámica y zoom fluidos, selector de generaciones, salto rápido y exportación a **SVG** y **PNG**.
+- **Inspector de Entidades, Búsqueda y Explorador Multimedia**:
+  - **Línea de Tiempo Cronológica** con cálculo de edad en cada evento, causas de defunción y citas de fuentes integradas.
+  - Exploradores dedicados para **Fuentes (`SOUR`)**, **Repositorios (`REPO`)** y **Archivos Multimedia (`OBJE`)**.
+  - **Búsqueda Difusa (Fuzzy Search)** insensible a acentos y tolerante a errores tipográficos, con filtros avanzados por estado vital, rango de años, fuentes y multimedia.
+- **Análisis Genealógico y Calculadora de Parentesco**:
+  - **Calculadora de Parentesco y Consanguinidad (LCA)**: Descubra cómo se relacionan dos individuos cualesquiera, sus ancestros comunes, grados civil y canónico, porcentaje estimado de ADN compartido y ruta paso a paso.
+  - **Panel Demográfico y de Migración**: Esperanza de vida media, récords de longevidad, histogramas de nacimientos y defunciones por época histórica y **Corredores de Migración (Origen → Destino)**.
 - **Soporte multilingüe**: Internacionalización completa en Español (`es-MX`), Inglés (`en-US`), Portugués (`pt-BR`) y Chino Simplificado (`zh-CN`).
-- **Conjunto de datos de ejemplo incluido**: Viene con un archivo genealógico real de más de 3,850 líneas listo para explorar.
+- **Conjunto de datos de ejemplo incluido**: Incluye un archivo genealógico interconectado de 10,993 líneas (`sample.gedcom`, 229 individuos, 100 familias y 7 generaciones).
 
 ## 🚀 Uso
 
@@ -43,16 +50,27 @@
 ```bash
 git clone https://github.com/planetsLightningArrester/atavismo.git
 cd atavismo
-npm run preinstall
+npm ci
 npm run start
 ```
 
-### 🧪 Pruebas
+### 🧪 Pruebas y Rendimiento
 
 ```bash
+# Ejecutar análisis de seguridad (Electronegativity), svelte-check y ESLint
 npm run lint
+
+# Compilar frontend y backend
 npm run build
+
+# Compilar y ejecutar pruebas unitarias y E2E con Playwright
 npm run test
+
+# Ejecutar pruebas reutilizando la compilación existente
+npm run test:run
+
+# Ejecutar suite de benchmark de rendimiento en pantalla completa
+npm run test:perf
 ```
 
 ## 📜 Licencia

@@ -175,7 +175,7 @@ jobs:
         run: |
           echo "### ⚡ Fullscreen Performance Benchmark" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          npm run test:perf | tee -a $GITHUB_STEP_SUMMARY
+          npm run test:perf:run | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: 🎯 Check if the job succeeded

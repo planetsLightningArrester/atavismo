@@ -2,7 +2,7 @@
   import { _ } from 'svelte-i18n'
   import LocaleSwitches from './LocaleSwitches.svelte'
 
-  export let activeTab: 'overview' | 'tree' | 'records' | 'raw' = 'overview'
+  export let activeTab: 'overview' | 'tree' | 'records' | 'analytics' | 'raw' = 'overview'
   export let onOpenFile: () => void
   export let onLoadSample: () => void
   export let hasData: boolean = false
@@ -55,6 +55,16 @@
           }}
         >
           📋 {$_('main_page.tab_records')}
+        </button>
+        <button
+          class="tab-btn"
+          class:active={activeTab === 'analytics'}
+          data-testid="tab-analytics"
+          on:click={() => {
+            activeTab = 'analytics'
+          }}
+        >
+          🧬 {$_('main_page.tab_analytics')}
         </button>
         <button
           class="tab-btn"

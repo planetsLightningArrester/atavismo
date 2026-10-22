@@ -27,10 +27,10 @@ while read -r _ local_sha __ remote_sha; do
 done
 
 if [ "${run_checks}" = true ]; then
-	echo '[INFO] Running tests'
-	npm run test
-	echo '[INFO] Running linters'
+	echo '[INFO] Running linters & security checks'
 	npm run lint
-	echo '[INFO] Running package'
-	(cd backend && npm run package)
+	echo '[INFO] Building and packaging application'
+	npm run package
+	echo '[INFO] Running tests'
+	npm run test:run
 fi

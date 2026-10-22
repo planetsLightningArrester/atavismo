@@ -36,8 +36,8 @@
     "copy-assets:default": "cp -rf src/images dist",
     "copy-assets:win32": "xcopy src\\images dist\\images /e /i /h /y",
     "copy-client": "run-script-os",
-    "copy-client:default": "cp -rf src/client dist/client && cp -rf src/images dist",
-    "copy-client:win32": "xcopy src\\client dist\\client /e /i /h /y && xcopy src\\images dist\\images /e /i /h /y",
+    "copy-client:default": "cp -rf src/client dist/client",
+    "copy-client:win32": "xcopy src\\client dist\\client /e /i /h /y",
     "move-output": "run-script-os",
     "move-output:default": "rimraf ../dist && mv out ../dist",
     "move-output:win32": "rimraf ../dist && move out ..\\dist",
@@ -49,7 +49,10 @@
     "test:default": "NODE_ENV=testing playwright test --reporter line",
     "test:linux": "NODE_ENV=testing xvfb-run -s \"-screen 0, 1024x768x24x24\" playwright test --reporter line",
     "test:win32": "set NODE_ENV=testing && playwright test --reporter line",
-    "pretest:perf": "npm run compile:test",
+    "test:run": "run-script-os",
+    "test:run:default": "NODE_ENV=testing playwright test --reporter line",
+    "test:run:linux": "NODE_ENV=testing xvfb-run -s \"-screen 0, 1024x768x24x24\" playwright test --reporter line",
+    "test:run:win32": "set NODE_ENV=testing && playwright test --reporter line",
     "test:perf": "run-script-os",
     "test:perf:default": "NODE_ENV=testing PERF_BENCH=1 playwright test --reporter line",
     "test:perf:linux": "NODE_ENV=testing PERF_BENCH=1 xvfb-run -s \"-screen 0, 1920x1080x24\" playwright test --reporter line",
@@ -60,8 +63,8 @@
     "test-ui": "run-script-os",
     "test-ui:default": "NODE_ENV=development playwright test --ui",
     "test-ui:win32": "set NODE_ENV=development && playwright test --ui",
-    "package": "npm run compile && npm run lint && electron-forge package && npm run move-output",
-    "make": "npm run compile && npm run lint && electron-forge make && npm run move-output"
+    "package": "npm run compile && electron-forge package && npm run move-output",
+    "make": "npm run compile && electron-forge make && npm run move-output"
   },
   "devDependencies": {
     "@doyensec/electronegativity": "^1.10.3",

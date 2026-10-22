@@ -5,6 +5,7 @@
   import MetricsCard from './lib/MetricsCard.svelte'
   import TreePreview from './lib/TreePreview.svelte'
   import RecordsList from './lib/RecordsList.svelte'
+  import AnalyticsView from './lib/AnalyticsView.svelte'
   import Footer from './lib/Footer.svelte'
   import { Icon, Styles } from '@sveltestrap/sveltestrap'
 
@@ -30,7 +31,7 @@
   let gedcomData: GedcomData | undefined
   let rawText = ''
   let loadedFileName = ''
-  let activeTab: 'overview' | 'tree' | 'records' | 'raw' = 'overview'
+  let activeTab: 'overview' | 'tree' | 'records' | 'analytics' | 'raw' = 'overview'
   let selectedIndividualId = ''
   let isLoading = false
   let errorMessage = ''
@@ -267,6 +268,18 @@
               bind:selectedIndividualId
               onExploreInTree={() => {
                 activeTab = 'tree'
+              }}
+            />
+          </div>
+        {:else if activeTab === 'analytics'}
+          <div class="tab-pane">
+            <AnalyticsView
+              individuals={gedcomData.individuals}
+              families={gedcomData.families}
+              bind:selectedIndividualId
+              onSelectPersonInRecords={(id) => {
+                selectedIndividualId = id
+                activeTab = 'records'
               }}
             />
           </div>

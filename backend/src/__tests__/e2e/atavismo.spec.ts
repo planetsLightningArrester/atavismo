@@ -246,4 +246,51 @@ test.describe.serial('Atavismo E2E Tests', () => {
     await window.getByTestId('records-subtab-individuals').click()
     await expect(window.locator('.records-table')).toBeVisible()
   })
+
+  test('explores Phase 5 kinship pathfinder, consanguinity degrees, demographic charts, and migration routes', async () => {
+    const analyticsTab = window.getByTestId('tab-analytics')
+    await analyticsTab.click()
+
+    // 1. Verify Kinship Pathfinder & Consanguinity Calculator renders with default blood relationship
+    await expect(window.getByTestId('kinship-calculator')).toBeVisible()
+    await expect(window.getByTestId('kinship-result-banner')).toBeVisible()
+    await expect(window.getByTestId('kinship-relation-badge')).toHaveText('Grandparent')
+    await expect(window.getByTestId('kinship-civil-degree')).toHaveText('2º')
+    await expect(window.getByTestId('kinship-shared-dna')).toHaveText('25%')
+    expect(await window.getByTestId('kinship-step-card').count()).toBe(3)
+
+    // 2. Test Swap button (Grandparent -> Grandchild)
+    await window.getByTestId('kinship-swap-btn').click()
+    await expect(window.getByTestId('kinship-relation-badge')).toHaveText('Grandchild')
+    await expect(window.getByTestId('kinship-civil-degree')).toHaveText('2º')
+    await window.getByTestId('kinship-swap-btn').click()
+
+    // 3. Test Parent preset (1st degree, 50% shared DNA)
+    await window.getByTestId('kinship-preset-parent').click()
+    await expect(window.getByTestId('kinship-relation-badge')).toHaveText('Parent')
+    await expect(window.getByTestId('kinship-civil-degree')).toHaveText('1º')
+    await expect(window.getByTestId('kinship-shared-dna')).toHaveText('50%')
+    expect(await window.getByTestId('kinship-step-card').count()).toBe(2)
+
+    // 4. Test Spouse preset (Affine marriage relationship, 0% shared DNA)
+    await window.getByTestId('kinship-preset-spouse').click()
+    await expect(window.getByTestId('kinship-relation-badge')).toHaveText('Spouse / Partner')
+    await expect(window.getByTestId('kinship-shared-dna')).toHaveText('0%')
+
+    // 5. Verify Demographic KPIs, Era Histogram, Longevity Brackets, and Migration Corridors
+    await expect(window.getByTestId('analytics-kpi-grid')).toBeVisible()
+    await expect(window.getByTestId('kpi-avg-lifespan')).toContainText('yrs')
+
+    await expect(window.getByTestId('analytics-era-chart')).toBeVisible()
+    expect(await window.getByTestId('era-bucket-row').count()).toBeGreaterThan(0)
+
+    await expect(window.getByTestId('analytics-longevity-chart')).toBeVisible()
+    expect(await window.getByTestId('longevity-bracket-row').count()).toBe(5)
+
+    await expect(window.getByTestId('migration-routes-list')).toBeVisible()
+    expect(await window.getByTestId('migration-route-item').count()).toBeGreaterThan(0)
+
+    await expect(window.getByTestId('top-places-list')).toBeVisible()
+    expect(await window.getByTestId('top-place-item').count()).toBeGreaterThan(0)
+  })
 })
