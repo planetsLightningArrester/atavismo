@@ -11,7 +11,7 @@
   export let onExploreInTree: (() => void) | null = null
   export let onDatasetChanged: (() => void) | null = null
 
-  type EntityView = 'individuals' | 'sources' | 'repositories' | 'media'
+  type EntityView = 'individuals' | 'families' | 'sources' | 'repositories' | 'media'
   type VitalFilter = 'ALL' | 'LIVING' | 'DECEASED'
   type SortOrder = 'id' | 'name' | 'birth_asc' | 'birth_desc'
 
@@ -25,6 +25,7 @@
   let yearToInput = ''
   let sortOrder: SortOrder = 'id'
 
+  let selectedFamilyId = ''
   let selectedSourceId = ''
   let selectedRepoId = ''
   let selectedMediaId = ''
@@ -41,6 +42,77 @@
   let editDeathDate = ''
   let editDeathPlace = ''
   let editNotes = ''
+
+  // Families Authoring State
+  let isEditingFamily = false
+  let isCreatingFamily = false
+  let editFamId = ''
+  let editFamHusbandId = ''
+  let editFamWifeId = ''
+  let editFamChildrenIds: string[] = []
+  let editFamMarriageDate = ''
+  let editFamMarriagePlace = ''
+  let editFamDivorced = false
+  let editFamNotes = ''
+  let editFamChildToAdd = ''
+
+  // Sources Authoring State
+  let isEditingSource = false
+  let isCreatingSource = false
+  let editSourceId = ''
+  let editSourceTitle = ''
+  let editSourceAuthor = ''
+  let editSourcePublication = ''
+  let editSourceRepoId = ''
+  let editSourceNotes = ''
+
+  // Repositories Authoring State
+  let isEditingRepo = false
+  let isCreatingRepo = false
+  let editRepoId = ''
+  let editRepoName = ''
+  let editRepoAddress = ''
+  let editRepoPhone = ''
+  let editRepoEmail = ''
+  let editRepoNotes = ''
+
+  // Multimedia Authoring State
+  let isEditingMedia = false
+  let isCreatingMedia = false
+  let editMediaId = ''
+  let editMediaTitle = ''
+  let editMediaFormat = 'JPEG'
+  let editMediaFilePath = ''
+  let editMediaNotes = ''
+
+  // Life Events Authoring State
+  let isEditingEvent = false
+  let isCreatingEvent = false
+  let editEventIndex = -1
+  let editEventType = 'BIRT'
+  let editEventDate = ''
+  let editEventPlace = ''
+  let editEventValue = ''
+  let editEventCause = ''
+  let editEventNotes = ''
+
+  // Citations Authoring State
+  let isEditingCitation = false
+  let isCreatingCitation = false
+  let citationTargetEventIndex: number | null = null
+  let editCitationIndex = -1
+  let editCitationSourceId = ''
+  let editCitationPage = ''
+  let editCitationQuay: number | undefined
+  let editCitationText = ''
+
+  // Attach Media State
+  let isAttachingMedia = false
+  let attachMediaSelectId = ''
+
+  let indiMap = new Map<string, Individual>()
+  let famMap = new Map<string, Family>()
+  let selectedPerson: Individual | undefined
 
   function extractYearFromString(val: string): number | undefined {
     const m = /\b(1\d{3}|20\d{2})\b/.exec(val)
@@ -210,6 +282,556 @@
     }
   }
 
+  // Families CRUD
+  function openCreateFamilyModal(): void {
+    editFamId = generateNextId(families.map((f) => f.id), 'F')
+    editFamHusbandId = ''
+    editFamWifeId = ''
+    editFamChildrenIds = []
+    editFamMarriageDate = ''
+    editFamMarriagePlace = ''
+    editFamDivorced = false
+    editFamNotes = ''
+    editFamChildToAdd = ''
+    isEditingFamily = false
+    isCreatingFamily = true
+  }
+
+  function openEditFamilyModal(fam: Family): void {
+    editFamId = fam.id
+    editFamHusbandId = fam.husbandId ?? ''
+    editFamWifeId = fam.wifeId ?? ''
+    editFamChildrenIds = [...fam.childrenIds]
+    editFamMarriageDate = fam.marriage?.date ?? ''
+    editFamMarriagePlace = fam.marriage?.place ?? ''
+    editFamDivorced = fam.divorced ?? false
+    editFamNotes = fam.notes ?? ''
+    editFamChildToAdd = ''
+    isCreatingFamily = false
+    isEditingFamily = true
+  }
+
+  function saveFamily(): void {
+    const existing = families.find((f) => f.id === editFamId)
+    const isNew = existing === undefined
+    const fam: Family = existing ?? {
+      id: editFamId,
+      husbandId: editFamHusbandId.length > 0 ? editFamHusbandId : undefined,
+      wifeId: editFamWifeId.length > 0 ? editFamWifeId : undefined,
+      childrenIds: [...editFamChildrenIds],
+      events: [],
+      citations: [],
+      mediaIds: [],
+      notes: editFamNotes.trim(),
+      divorced: editFamDivorced,
+    }
+
+    if (!isNew) {
+      if (fam.husbandId !== editFamHusbandId && fam.husbandId !== undefined) {
+        const oldHusb = indiMap.get(fam.husbandId)
+        if (oldHusb !== undefined) {
+          oldHusb.fams = oldHusb.fams.filter((fid) => fid !== editFamId)
+        }
+      }
+      if (fam.wifeId !== editFamWifeId && fam.wifeId !== undefined) {
+        const oldWife = indiMap.get(fam.wifeId)
+        if (oldWife !== undefined) {
+          oldWife.fams = oldWife.fams.filter((fid) => fid !== editFamId)
+        }
+      }
+      for (const oldCid of fam.childrenIds) {
+        if (!editFamChildrenIds.includes(oldCid)) {
+          const child = indiMap.get(oldCid)
+          if (child !== undefined) {
+            child.famc = child.famc.filter((fid) => fid !== editFamId)
+          }
+        }
+      }
+      fam.husbandId = editFamHusbandId.length > 0 ? editFamHusbandId : undefined
+      fam.wifeId = editFamWifeId.length > 0 ? editFamWifeId : undefined
+      fam.childrenIds = [...editFamChildrenIds]
+      fam.divorced = editFamDivorced
+      fam.notes = editFamNotes.trim()
+    }
+
+    const marrYear = extractYearFromString(editFamMarriageDate)
+    if (editFamMarriageDate.length > 0 || editFamMarriagePlace.length > 0) {
+      if (fam.marriage === undefined) fam.marriage = { type: 'MARR' }
+      fam.marriage.date = editFamMarriageDate
+      fam.marriage.place = editFamMarriagePlace
+      fam.marriage.year = marrYear
+
+      let marrEv = fam.events.find((e) => e.type === 'MARR')
+      if (marrEv === undefined) {
+        marrEv = { type: 'MARR', citations: [], mediaIds: [] }
+        fam.events.unshift(marrEv)
+      }
+      marrEv.date = editFamMarriageDate
+      marrEv.place = editFamMarriagePlace
+      marrEv.year = marrYear
+    } else {
+      fam.marriage = undefined
+      fam.events = fam.events.filter((e) => e.type !== 'MARR')
+    }
+
+    if (editFamHusbandId.length > 0) {
+      const husb = indiMap.get(editFamHusbandId)
+      if (husb !== undefined && !husb.fams.includes(editFamId)) {
+        husb.fams.push(editFamId)
+      }
+    }
+    if (editFamWifeId.length > 0) {
+      const wife = indiMap.get(editFamWifeId)
+      if (wife !== undefined && !wife.fams.includes(editFamId)) {
+        wife.fams.push(editFamId)
+      }
+    }
+    for (const cid of editFamChildrenIds) {
+      const child = indiMap.get(cid)
+      if (child !== undefined && !child.famc.includes(editFamId)) {
+        child.famc.push(editFamId)
+      }
+    }
+
+    if (isNew) {
+      families = [fam, ...families]
+    } else {
+      families = [...families]
+    }
+    individuals = [...individuals]
+    selectedFamilyId = editFamId
+    isEditingFamily = false
+    isCreatingFamily = false
+    if (onDatasetChanged !== null) onDatasetChanged()
+  }
+
+  function deleteFamily(id: string): void {
+    // eslint-disable-next-line no-alert
+    if (window.confirm($_('records.confirm_delete_family'))) {
+      families = families.filter((f) => f.id !== id)
+      for (const indi of individuals) {
+        indi.fams = indi.fams.filter((fid) => fid !== id)
+        indi.famc = indi.famc.filter((fid) => fid !== id)
+      }
+      individuals = [...individuals]
+      if (selectedFamilyId === id) {
+        selectedFamilyId = families[0]?.id ?? ''
+      }
+      if (onDatasetChanged !== null) onDatasetChanged()
+    }
+  }
+
+  // Sources CRUD
+  function openCreateSourceModal(): void {
+    editSourceId = generateNextId(Object.keys(sources), 'S')
+    editSourceTitle = ''
+    editSourceAuthor = ''
+    editSourcePublication = ''
+    editSourceRepoId = ''
+    editSourceNotes = ''
+    isEditingSource = false
+    isCreatingSource = true
+  }
+
+  function openEditSourceModal(src: SourceRecord): void {
+    editSourceId = src.id
+    editSourceTitle = src.title ?? ''
+    editSourceAuthor = src.author ?? ''
+    editSourcePublication = src.publication ?? ''
+    editSourceRepoId = src.repositoryId ?? ''
+    editSourceNotes = src.notes ?? ''
+    isCreatingSource = false
+    isEditingSource = true
+  }
+
+  function saveSource(): void {
+    const updated: SourceRecord = {
+      id: editSourceId,
+      title: editSourceTitle.trim(),
+      author: editSourceAuthor.trim().length > 0 ? editSourceAuthor.trim() : undefined,
+      publication: editSourcePublication.trim().length > 0 ? editSourcePublication.trim() : undefined,
+      repositoryId: editSourceRepoId.length > 0 ? editSourceRepoId : undefined,
+      notes: editSourceNotes.trim().length > 0 ? editSourceNotes.trim() : undefined,
+    }
+    sources[editSourceId] = updated
+    sources = { ...sources }
+    selectedSourceId = editSourceId
+    isEditingSource = false
+    isCreatingSource = false
+    if (onDatasetChanged !== null) onDatasetChanged()
+  }
+
+  function deleteSource(id: string): void {
+    // eslint-disable-next-line no-alert
+    if (window.confirm($_('records.confirm_delete_source'))) {
+      const copy = { ...sources }
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete copy[id]
+      sources = copy
+      for (const indi of individuals) {
+        indi.citations = indi.citations.filter((c) => c.sourceId !== id)
+        for (const ev of indi.events) {
+          ev.citations = ev.citations.filter((c) => c.sourceId !== id)
+        }
+      }
+      for (const fam of families) {
+        fam.citations = fam.citations.filter((c) => c.sourceId !== id)
+        for (const ev of fam.events) {
+          ev.citations = ev.citations.filter((c) => c.sourceId !== id)
+        }
+      }
+      individuals = [...individuals]
+      families = [...families]
+      if (selectedSourceId === id) {
+        selectedSourceId = Object.keys(sources)[0] ?? ''
+      }
+      if (onDatasetChanged !== null) onDatasetChanged()
+    }
+  }
+
+  // Repositories CRUD
+  function openCreateRepoModal(): void {
+    editRepoId = generateNextId(Object.keys(repositories), 'R')
+    editRepoName = ''
+    editRepoAddress = ''
+    editRepoPhone = ''
+    editRepoEmail = ''
+    editRepoNotes = ''
+    isEditingRepo = false
+    isCreatingRepo = true
+  }
+
+  function openEditRepoModal(repo: RepositoryRecord): void {
+    editRepoId = repo.id
+    editRepoName = repo.name ?? ''
+    editRepoAddress = repo.address ?? ''
+    editRepoPhone = repo.phone ?? ''
+    editRepoEmail = repo.email ?? ''
+    editRepoNotes = repo.notes ?? ''
+    isCreatingRepo = false
+    isEditingRepo = true
+  }
+
+  function saveRepo(): void {
+    const updated: RepositoryRecord = {
+      id: editRepoId,
+      name: editRepoName.trim(),
+      address: editRepoAddress.trim().length > 0 ? editRepoAddress.trim() : undefined,
+      phone: editRepoPhone.trim().length > 0 ? editRepoPhone.trim() : undefined,
+      email: editRepoEmail.trim().length > 0 ? editRepoEmail.trim() : undefined,
+      notes: editRepoNotes.trim().length > 0 ? editRepoNotes.trim() : undefined,
+    }
+    repositories[editRepoId] = updated
+    repositories = { ...repositories }
+    selectedRepoId = editRepoId
+    isEditingRepo = false
+    isCreatingRepo = false
+    if (onDatasetChanged !== null) onDatasetChanged()
+  }
+
+  function deleteRepo(id: string): void {
+    // eslint-disable-next-line no-alert
+    if (window.confirm($_('records.confirm_delete_repo'))) {
+      const copy = { ...repositories }
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete copy[id]
+      repositories = copy
+      for (const src of Object.values(sources)) {
+        if (src.repositoryId === id) {
+          src.repositoryId = undefined
+        }
+      }
+      sources = { ...sources }
+      if (selectedRepoId === id) {
+        selectedRepoId = Object.keys(repositories)[0] ?? ''
+      }
+      if (onDatasetChanged !== null) onDatasetChanged()
+    }
+  }
+
+  // Multimedia CRUD
+  function openCreateMediaModal(): void {
+    editMediaId = generateNextId(Object.keys(media), 'O')
+    editMediaTitle = ''
+    editMediaFormat = 'JPEG'
+    editMediaFilePath = ''
+    editMediaNotes = ''
+    isEditingMedia = false
+    isCreatingMedia = true
+  }
+
+  function openEditMediaModal(m: MediaRecord): void {
+    editMediaId = m.id
+    editMediaTitle = m.title ?? ''
+    editMediaFormat = m.format ?? 'JPEG'
+    editMediaFilePath = m.filePath ?? ''
+    editMediaNotes = m.notes ?? ''
+    isCreatingMedia = false
+    isEditingMedia = true
+  }
+
+  async function browseMediaFile(): Promise<void> {
+    try {
+      const res = await window.api.pickMediaFile()
+      if (!res.canceled && res.filePath !== undefined) {
+        editMediaFilePath = res.filePath
+        if (typeof res.format === 'string' && res.format.length > 0) {
+          editMediaFormat = res.format
+        }
+        if (typeof res.title === 'string' && res.title.length > 0 && editMediaTitle.trim().length === 0) {
+          editMediaTitle = res.title
+        }
+      }
+    } catch (err) {
+      console.error('Failed to pick media file:', err)
+    }
+  }
+
+  function saveMedia(): void {
+    const updated: MediaRecord = {
+      id: editMediaId,
+      title: editMediaTitle.trim().length > 0 ? editMediaTitle.trim() : undefined,
+      format: editMediaFormat.trim().length > 0 ? editMediaFormat.trim() : undefined,
+      filePath: editMediaFilePath.trim().length > 0 ? editMediaFilePath.trim() : undefined,
+      notes: editMediaNotes.trim().length > 0 ? editMediaNotes.trim() : undefined,
+    }
+    media[editMediaId] = updated
+    media = { ...media }
+    selectedMediaId = editMediaId
+    isEditingMedia = false
+    isCreatingMedia = false
+    if (onDatasetChanged !== null) onDatasetChanged()
+  }
+
+  function deleteMedia(id: string): void {
+    // eslint-disable-next-line no-alert
+    if (window.confirm($_('records.confirm_delete_media'))) {
+      const copy = { ...media }
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete copy[id]
+      media = copy
+      for (const indi of individuals) {
+        indi.mediaIds = indi.mediaIds.filter((mid) => mid !== id)
+        for (const ev of indi.events) {
+          if (ev.mediaIds !== undefined) {
+            ev.mediaIds = ev.mediaIds.filter((mid) => mid !== id)
+          }
+        }
+      }
+      for (const fam of families) {
+        fam.mediaIds = fam.mediaIds.filter((mid) => mid !== id)
+        for (const ev of fam.events) {
+          if (ev.mediaIds !== undefined) {
+            ev.mediaIds = ev.mediaIds.filter((mid) => mid !== id)
+          }
+        }
+      }
+      individuals = [...individuals]
+      families = [...families]
+      if (selectedMediaId === id) {
+        selectedMediaId = Object.keys(media)[0] ?? ''
+      }
+      if (onDatasetChanged !== null) onDatasetChanged()
+    }
+  }
+
+  // Life Events on Individual
+  function openCreateEventModal(): void {
+    if (selectedPerson === undefined) return
+    editEventIndex = -1
+    editEventType = 'OCCU'
+    editEventDate = ''
+    editEventPlace = ''
+    editEventValue = ''
+    editEventCause = ''
+    editEventNotes = ''
+    isEditingEvent = false
+    isCreatingEvent = true
+  }
+
+  function openEditEventModal(eventIndex: number): void {
+    if (selectedPerson === undefined) return
+    const ev = selectedPerson.events[eventIndex]
+    if (ev === undefined) return
+    editEventIndex = eventIndex
+    editEventType = ev.type
+    editEventDate = ev.date ?? ''
+    editEventPlace = ev.place ?? ''
+    editEventValue = ev.value ?? ''
+    editEventCause = ev.cause ?? ''
+    editEventNotes = ev.notes ?? ''
+    isCreatingEvent = false
+    isEditingEvent = true
+  }
+
+  function saveEvent(): void {
+    if (selectedPerson === undefined) return
+    const yr = extractYearFromString(editEventDate)
+    if (isCreatingEvent) {
+      const newEv: LifeEvent = {
+        type: editEventType,
+        date: editEventDate.trim().length > 0 ? editEventDate.trim() : undefined,
+        place: editEventPlace.trim().length > 0 ? editEventPlace.trim() : undefined,
+        year: yr,
+        value: editEventValue.trim().length > 0 ? editEventValue.trim() : undefined,
+        cause: editEventCause.trim().length > 0 ? editEventCause.trim() : undefined,
+        notes: editEventNotes.trim().length > 0 ? editEventNotes.trim() : undefined,
+        citations: [],
+        mediaIds: [],
+      }
+      selectedPerson.events.push(newEv)
+      if (editEventType === 'BIRT') {
+        selectedPerson.birth = {
+          type: 'BIRT',
+          date: newEv.date,
+          place: newEv.place,
+          year: yr,
+        }
+      } else if (editEventType === 'DEAT') {
+        selectedPerson.death = {
+          type: 'DEAT',
+          date: newEv.date,
+          place: newEv.place,
+          year: yr,
+        }
+      }
+    } else if (editEventIndex >= 0 && editEventIndex < selectedPerson.events.length) {
+      const ev = selectedPerson.events[editEventIndex]
+      ev.type = editEventType
+      ev.date = editEventDate.trim().length > 0 ? editEventDate.trim() : undefined
+      ev.place = editEventPlace.trim().length > 0 ? editEventPlace.trim() : undefined
+      ev.year = yr
+      ev.value = editEventValue.trim().length > 0 ? editEventValue.trim() : undefined
+      ev.cause = editEventCause.trim().length > 0 ? editEventCause.trim() : undefined
+      ev.notes = editEventNotes.trim().length > 0 ? editEventNotes.trim() : undefined
+      if (editEventType === 'BIRT') {
+        selectedPerson.birth = {
+          type: 'BIRT',
+          date: ev.date,
+          place: ev.place,
+          year: yr,
+        }
+      } else if (editEventType === 'DEAT') {
+        selectedPerson.death = {
+          type: 'DEAT',
+          date: ev.date,
+          place: ev.place,
+          year: yr,
+        }
+      }
+    }
+    individuals = [...individuals]
+    isEditingEvent = false
+    isCreatingEvent = false
+    if (onDatasetChanged !== null) onDatasetChanged()
+  }
+
+  function deleteEvent(eventIndex: number): void {
+    if (selectedPerson === undefined) return
+    // eslint-disable-next-line no-alert
+    if (window.confirm($_('records.confirm_delete_event'))) {
+      const ev = selectedPerson.events[eventIndex]
+      if (ev !== undefined) {
+        if (ev.type === 'BIRT') selectedPerson.birth = undefined
+        if (ev.type === 'DEAT') selectedPerson.death = undefined
+      }
+      selectedPerson.events.splice(eventIndex, 1)
+      individuals = [...individuals]
+      if (onDatasetChanged !== null) onDatasetChanged()
+    }
+  }
+
+  // Citations CRUD
+  function openCreateCitationModal(eventIndex: number | null = null): void {
+    citationTargetEventIndex = eventIndex
+    editCitationIndex = -1
+    editCitationSourceId = Object.keys(sources)[0] ?? ''
+    editCitationPage = ''
+    editCitationQuay = undefined
+    editCitationText = ''
+    isEditingCitation = false
+    isCreatingCitation = true
+  }
+
+  function openEditCitationModal(index: number, eventIndex: number | null = null): void {
+    if (selectedPerson === undefined) return
+    citationTargetEventIndex = eventIndex
+    editCitationIndex = index
+    const cit = eventIndex === null
+      ? selectedPerson.citations[index]
+      : selectedPerson.events[eventIndex]?.citations[index]
+    if (cit === undefined) return
+    editCitationSourceId = cit.sourceId
+    editCitationPage = cit.page ?? ''
+    editCitationQuay = cit.quay
+    editCitationText = cit.text ?? ''
+    isCreatingCitation = false
+    isEditingCitation = true
+  }
+
+  function saveCitation(): void {
+    if (selectedPerson === undefined) return
+    const cit: Citation = {
+      sourceId: editCitationSourceId,
+      page: editCitationPage.trim().length > 0 ? editCitationPage.trim() : undefined,
+      quay: editCitationQuay,
+      text: editCitationText.trim().length > 0 ? editCitationText.trim() : undefined,
+    }
+
+    const targetList = citationTargetEventIndex === null
+      ? selectedPerson.citations
+      : (selectedPerson.events[citationTargetEventIndex]?.citations ?? selectedPerson.citations)
+
+    if (isCreatingCitation) {
+      targetList.push(cit)
+    } else if (editCitationIndex >= 0 && editCitationIndex < targetList.length) {
+      targetList[editCitationIndex] = cit
+    }
+    individuals = [...individuals]
+    isEditingCitation = false
+    isCreatingCitation = false
+    if (onDatasetChanged !== null) onDatasetChanged()
+  }
+
+  function deleteCitation(index: number, eventIndex: number | null = null): void {
+    if (selectedPerson === undefined) return
+    // eslint-disable-next-line no-alert
+    if (window.confirm($_('records.confirm_delete_citation'))) {
+      const targetList = eventIndex === null
+        ? selectedPerson.citations
+        : selectedPerson.events[eventIndex ?? 0]?.citations
+      if (targetList !== undefined) {
+        targetList.splice(index, 1)
+        individuals = [...individuals]
+        if (onDatasetChanged !== null) onDatasetChanged()
+      }
+    }
+  }
+
+  // Attach Media
+  function openAttachMediaModal(): void {
+    if (selectedPerson === undefined) return
+    attachMediaSelectId = Object.keys(media)[0] ?? ''
+    isAttachingMedia = true
+  }
+
+  function attachMediaToPerson(): void {
+    if (selectedPerson === undefined || attachMediaSelectId.length === 0) return
+    if (!selectedPerson.mediaIds.includes(attachMediaSelectId)) {
+      selectedPerson.mediaIds.push(attachMediaSelectId)
+      individuals = [...individuals]
+      if (onDatasetChanged !== null) onDatasetChanged()
+    }
+    isAttachingMedia = false
+  }
+
+  function detachMediaFromPerson(mId: string): void {
+    if (selectedPerson === undefined) return
+    selectedPerson.mediaIds = selectedPerson.mediaIds.filter((id) => id !== mId)
+    individuals = [...individuals]
+    if (onDatasetChanged !== null) onDatasetChanged()
+  }
+
   const CURRENT_YEAR = new Date().getFullYear()
 
   // Map of individuals and families by ID for O(1) lookups
@@ -221,6 +843,9 @@
   $: mediaList = Object.values(media)
 
   $: {
+    if (selectedFamilyId.length === 0 && families.length > 0) {
+      selectedFamilyId = families[0].id
+    }
     if (selectedSourceId.length === 0 && sourceList.length > 0) {
       selectedSourceId = sourceList[0].id
     }
@@ -305,6 +930,29 @@
     return sorted
   })()
 
+  $: filteredFamilies = families.filter((fam) => {
+    if (searchQuery.trim().length === 0) return true
+    const husb = typeof fam.husbandId === 'string' ? indiMap.get(fam.husbandId) : undefined
+    const wife = typeof fam.wifeId === 'string' ? indiMap.get(fam.wifeId) : undefined
+    const children = fam.childrenIds.map((cid) => indiMap.get(cid)?.name).filter(Boolean) as string[]
+    return fuzzyMatchesQuery(
+      [
+        fam.id,
+        husb?.name,
+        husb?.givenName,
+        husb?.surname,
+        wife?.name,
+        wife?.givenName,
+        wife?.surname,
+        fam.marriage?.date,
+        fam.marriage?.place,
+        fam.notes,
+        ...children,
+      ],
+      searchQuery
+    )
+  })
+
   $: filteredSources = sourceList.filter((src) => {
     if (searchQuery.trim().length === 0) return true
     const repoName = typeof src.repositoryId === 'string' ? repositories[src.repositoryId]?.name : undefined
@@ -325,6 +973,7 @@
 
   interface TimelineItem {
     id: string
+    originalIndex?: number
     type: string
     date?: string
     place?: string
@@ -367,6 +1016,7 @@
       if (hasContent) {
         items.push({
           id: `indi-ev-${idx}`,
+          originalIndex: idx,
           type: ev.type,
           date: ev.date,
           place: ev.place,
@@ -610,6 +1260,16 @@
     </button>
     <button
       class="subtab-btn"
+      class:active={entityView === 'families'}
+      data-testid="records-subtab-families"
+      on:click={() => {
+        entityView = 'families'
+      }}
+    >
+      👨‍👩‍👧‍👦 {$_('records.tab_families')} <span class="subtab-count">{families.length}</span>
+    </button>
+    <button
+      class="subtab-btn"
       class:active={entityView === 'sources'}
       data-testid="records-subtab-sources"
       on:click={() => {
@@ -754,6 +1414,46 @@
           ➕ {$_('records.add_person')}
         </button>
       </div>
+    {:else if entityView === 'families'}
+      <div class="entity-actions-bar">
+        <button
+          class="add-entity-btn"
+          data-testid="add-family-btn"
+          on:click={openCreateFamilyModal}
+        >
+          ➕ {$_('records.add_family')}
+        </button>
+      </div>
+    {:else if entityView === 'sources'}
+      <div class="entity-actions-bar">
+        <button
+          class="add-entity-btn"
+          data-testid="add-source-btn"
+          on:click={openCreateSourceModal}
+        >
+          ➕ {$_('records.add_source')}
+        </button>
+      </div>
+    {:else if entityView === 'repositories'}
+      <div class="entity-actions-bar">
+        <button
+          class="add-entity-btn"
+          data-testid="add-repo-btn"
+          on:click={openCreateRepoModal}
+        >
+          ➕ {$_('records.add_repo')}
+        </button>
+      </div>
+    {:else if entityView === 'media'}
+      <div class="entity-actions-bar">
+        <button
+          class="add-entity-btn"
+          data-testid="add-media-btn"
+          on:click={openCreateMediaModal}
+        >
+          ➕ {$_('records.add_media')}
+        </button>
+      </div>
     {/if}
   </div>
 
@@ -878,7 +1578,16 @@
 
             <!-- Interactive Chronological Life Timeline -->
             <div class="inspector-section">
-              <div class="section-heading">⏳ {$_('records.timeline')} ({personTimeline.length})</div>
+              <div class="section-heading-row">
+                <div class="section-heading">⏳ {$_('records.timeline')} ({personTimeline.length})</div>
+                <button
+                  class="action-pill-btn add-btn"
+                  data-testid="add-event-btn"
+                  on:click={openCreateEventModal}
+                >
+                  ➕ {$_('records.add_event')}
+                </button>
+              </div>
               {#if personTimeline.length === 0}
                 <div class="event-item text-muted">—</div>
               {:else}
@@ -897,6 +1606,40 @@
                             {/if}
                             {#if item.age !== undefined}
                               <span class="age-badge">{$_({ id: 'records.age_at_event', values: { age: item.age } })}</span>
+                            {/if}
+                            {#if item.originalIndex !== undefined}
+                              <div class="item-action-btns">
+                                <button
+                                  class="icon-action-btn"
+                                  title={$_('records.edit_event')}
+                                  data-testid="edit-event-btn"
+                                  on:click={() => {
+                                    if (item.originalIndex !== undefined) openEditEventModal(item.originalIndex)
+                                  }}
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  class="icon-action-btn delete"
+                                  title={$_('records.delete_event')}
+                                  data-testid="delete-event-btn"
+                                  on:click={() => {
+                                    if (item.originalIndex !== undefined) deleteEvent(item.originalIndex)
+                                  }}
+                                >
+                                  🗑️
+                                </button>
+                                <button
+                                  class="action-pill-btn mini"
+                                  title={$_('records.add_citation')}
+                                  data-testid="add-event-citation-btn"
+                                  on:click={() => {
+                                    if (item.originalIndex !== undefined) openCreateCitationModal(item.originalIndex)
+                                  }}
+                                >
+                                  + Citation
+                                </button>
+                              </div>
                             {/if}
                           </div>
                         </div>
@@ -924,7 +1667,7 @@
 
                         {#if item.citations.length > 0}
                           <div class="timeline-citations">
-                            {#each item.citations as cit}
+                            {#each item.citations as cit, cIdx}
                               {@const srcRecord = sources[cit.sourceId]}
                               <div class="citation-pill-box">
                                 <button
@@ -946,6 +1689,26 @@
                                 {#if typeof cit.text === 'string' && cit.text.length > 0}
                                   <blockquote class="citation-excerpt">“{cit.text}”</blockquote>
                                 {/if}
+                                {#if item.originalIndex !== undefined}
+                                  <button
+                                    class="icon-action-btn mini"
+                                    title={$_('records.edit_citation')}
+                                    on:click={() => {
+                                      openEditCitationModal(cIdx, item.originalIndex ?? null)
+                                    }}
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    class="icon-action-btn mini delete"
+                                    title={$_('records.delete_citation')}
+                                    on:click={() => {
+                                      deleteCitation(cIdx, item.originalIndex ?? null)
+                                    }}
+                                  >
+                                    🗑️
+                                  </button>
+                                {/if}
                               </div>
                             {/each}
                           </div>
@@ -958,29 +1721,55 @@
             </div>
 
             <!-- Multimedia Gallery Attachments -->
-            {#if personMedia.length > 0}
-              <div class="inspector-section" data-testid="inspector-media-section">
+            <div class="inspector-section" data-testid="inspector-media-section">
+              <div class="section-heading-row">
                 <div class="section-heading">🖼️ {$_('records.media_gallery')} ({personMedia.length})</div>
+                <button
+                  class="action-pill-btn add-btn"
+                  data-testid="attach-media-btn"
+                  on:click={openAttachMediaModal}
+                >
+                  ➕ {$_('records.attach_media')}
+                </button>
+              </div>
+              {#if personMedia.length === 0}
+                <div class="event-item text-muted">—</div>
+              {:else}
                 <div class="media-mini-grid">
                   {#each personMedia as m (m.id)}
-                    <button
-                      class="media-mini-card"
-                      on:click={() => {
-                        inspectMedia(m.id)
-                      }}
-                    >
-                      <span class="media-format-badge">{m.format ?? 'FILE'}</span>
-                      <div class="media-mini-info">
-                        <div class="media-mini-title">{m.title ?? m.id}</div>
-                        {#if typeof m.filePath === 'string' && m.filePath.length > 0}
-                          <div class="media-mini-path">{m.filePath}</div>
-                        {/if}
-                      </div>
-                    </button>
+                    {@const isDirectlyAttached = selectedPerson.mediaIds.includes(m.id)}
+                    <div class="media-mini-card-wrapper">
+                      <button
+                        class="media-mini-card"
+                        on:click={() => {
+                          inspectMedia(m.id)
+                        }}
+                      >
+                        <span class="media-format-badge">{m.format ?? 'FILE'}</span>
+                        <div class="media-mini-info">
+                          <div class="media-mini-title">{m.title ?? m.id}</div>
+                          {#if typeof m.filePath === 'string' && m.filePath.length > 0}
+                            <div class="media-mini-path">{m.filePath}</div>
+                          {/if}
+                        </div>
+                      </button>
+                      {#if isDirectlyAttached}
+                        <button
+                          class="detach-btn"
+                          title={$_('records.detach_media')}
+                          data-testid="detach-media-btn"
+                          on:click={() => {
+                            detachMediaFromPerson(m.id)
+                          }}
+                        >
+                          ✕
+                        </button>
+                      {/if}
+                    </div>
                   {/each}
                 </div>
-              </div>
-            {/if}
+              {/if}
+            </div>
 
             <!-- Family Links -->
             {#if selectedPerson.famc.length > 0}
@@ -1069,6 +1858,76 @@
                 <div class="notes-content">{selectedPerson.notes}</div>
               </div>
             {/if}
+
+            <!-- Person-level Citations -->
+            <div class="inspector-section" data-testid="inspector-citations-section">
+              <div class="section-heading-row">
+                <div class="section-heading">📚 {$_('records.citations')} ({selectedPerson.citations.length})</div>
+                <button
+                  class="action-pill-btn add-btn"
+                  data-testid="add-citation-btn"
+                  on:click={() => {
+                    openCreateCitationModal(null)
+                  }}
+                >
+                  ➕ {$_('records.add_citation')}
+                </button>
+              </div>
+              {#if selectedPerson.citations.length === 0}
+                <div class="event-item text-muted">—</div>
+              {:else}
+                <div class="citation-cards-list">
+                  {#each selectedPerson.citations as cit, cIdx}
+                    {@const srcRecord = sources[cit.sourceId]}
+                    <div class="citation-full-card" data-testid="person-citation-card">
+                      <div class="citation-header-row">
+                        <button
+                          class="citation-source-btn"
+                          on:click={() => {
+                            inspectSource(cit.sourceId)
+                          }}
+                        >
+                          📚 {srcRecord?.title ?? cit.sourceId}
+                        </button>
+                        <div class="item-action-btns">
+                          <button
+                            class="icon-action-btn"
+                            title={$_('records.edit_citation')}
+                            on:click={() => {
+                              openEditCitationModal(cIdx, null)
+                            }}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            class="icon-action-btn delete"
+                            title={$_('records.delete_citation')}
+                            on:click={() => {
+                              deleteCitation(cIdx, null)
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                      <div class="citation-card-body">
+                        {#if typeof cit.page === 'string' && cit.page.length > 0}
+                          <span class="citation-page">{cit.page}</span>
+                        {/if}
+                        {#if cit.quay !== undefined}
+                          <span class="quay-badge q-{cit.quay}">
+                            {$_(`records.quay_${cit.quay}`, { default: `QUAY ${cit.quay}` })}
+                          </span>
+                        {/if}
+                        {#if typeof cit.text === 'string' && cit.text.length > 0}
+                          <blockquote class="citation-excerpt">“{cit.text}”</blockquote>
+                        {/if}
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
           </div>
         {:else}
           <div class="inspector-empty">
@@ -1077,6 +1936,112 @@
           </div>
         {/if}
       </div>
+    </div>
+  {:else if entityView === 'families'}
+    <!-- Families Explorer View -->
+    <div class="entity-grid" data-testid="families-explorer-grid">
+      {#if filteredFamilies.length === 0}
+        <div class="empty-state">{$_('main_page.no_records_found')}</div>
+      {:else}
+        {#each filteredFamilies as fam (fam.id)}
+          {@const husb = typeof fam.husbandId === 'string' ? indiMap.get(fam.husbandId) : undefined}
+          {@const wife = typeof fam.wifeId === 'string' ? indiMap.get(fam.wifeId) : undefined}
+          <div class="entity-card family-card" class:highlighted={fam.id === selectedFamilyId} data-testid="family-card">
+            <div class="entity-card-header">
+              <span class="entity-id-badge">{fam.id}</span>
+              <div class="card-action-btns">
+                <button
+                  class="icon-action-btn"
+                  title={$_('records.edit_family')}
+                  data-testid="edit-family-btn"
+                  on:click={() => {
+                    openEditFamilyModal(fam)
+                  }}
+                >
+                  ✏️
+                </button>
+                <button
+                  class="icon-action-btn delete"
+                  title={$_('records.delete_family')}
+                  data-testid="delete-family-btn"
+                  on:click={() => {
+                    deleteFamily(fam.id)
+                  }}
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+
+            <div class="family-spouses-row">
+              <div class="spouse-item">
+                <span class="spouse-role">👨 {$_('records.husband')}:</span>
+                {#if husb !== undefined}
+                  <button
+                    class="inline-entity-link"
+                    on:click={() => {
+                      selectPerson(husb.id)
+                    }}
+                  >
+                    {cleanName(husb.name)} <small>{formatLifespan(husb.birth, husb.death)}</small>
+                  </button>
+                {:else}
+                  <span class="text-muted">{$_('records.none_unlinked')}</span>
+                {/if}
+              </div>
+              <div class="spouse-item">
+                <span class="spouse-role">👩 {$_('records.wife')}:</span>
+                {#if wife !== undefined}
+                  <button
+                    class="inline-entity-link"
+                    on:click={() => {
+                      selectPerson(wife.id)
+                    }}
+                  >
+                    {cleanName(wife.name)} <small>{formatLifespan(wife.birth, wife.death)}</small>
+                  </button>
+                {:else}
+                  <span class="text-muted">{$_('records.none_unlinked')}</span>
+                {/if}
+              </div>
+            </div>
+
+            <div class="entity-meta-list">
+              {#if fam.marriage?.date !== undefined || fam.marriage?.place !== undefined}
+                <div>
+                  <strong>💍 {$_('records.marriage_date')}:</strong>
+                  {fam.marriage?.date ?? ''} {typeof fam.marriage?.place === 'string' && fam.marriage.place.length > 0 ? `(${fam.marriage.place})` : ''}
+                </div>
+              {/if}
+              {#if fam.divorced}
+                <div class="divorce-badge">💔 {$_('records.is_divorced')}</div>
+              {/if}
+              {#if typeof fam.notes === 'string' && fam.notes.length > 0}
+                <div class="family-notes-text">📝 {fam.notes}</div>
+              {/if}
+            </div>
+
+            {#if fam.childrenIds.length > 0}
+              <div class="entity-refs">
+                <div class="section-heading">👶 {$_('records.children')} ({fam.childrenIds.length})</div>
+                <div class="ref-chips">
+                  {#each fam.childrenIds as childId}
+                    {@const ch = indiMap.get(childId)}
+                    <button
+                      class="ref-chip"
+                      on:click={() => {
+                        selectPerson(childId)
+                      }}
+                    >
+                      {ch?.sex === 'M' ? '👦' : '👧'} {cleanName(ch?.name)}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      {/if}
     </div>
   {:else if entityView === 'sources'}
     <!-- Sources Explorer View -->
@@ -1088,6 +2053,28 @@
           <div class="entity-card-header">
             <span class="entity-id-badge">{src.id}</span>
             <h4 class="entity-card-title">{src.title ?? src.id}</h4>
+            <div class="card-action-btns">
+              <button
+                class="icon-action-btn"
+                title={$_('records.edit_source')}
+                data-testid="edit-source-btn"
+                on:click={() => {
+                  openEditSourceModal(src)
+                }}
+              >
+                ✏️
+              </button>
+              <button
+                class="icon-action-btn delete"
+                title={$_('records.delete_source')}
+                data-testid="delete-source-btn"
+                on:click={() => {
+                  deleteSource(src.id)
+                }}
+              >
+                🗑️
+              </button>
+            </div>
           </div>
           <div class="entity-meta-list">
             {#if typeof src.author === 'string' && src.author.length > 0}
@@ -1139,6 +2126,28 @@
           <div class="entity-card-header">
             <span class="entity-id-badge">{repo.id}</span>
             <h4 class="entity-card-title">🏛️ {repo.name ?? repo.id}</h4>
+            <div class="card-action-btns">
+              <button
+                class="icon-action-btn"
+                title={$_('records.edit_repo')}
+                data-testid="edit-repo-btn"
+                on:click={() => {
+                  openEditRepoModal(repo)
+                }}
+              >
+                ✏️
+              </button>
+              <button
+                class="icon-action-btn delete"
+                title={$_('records.delete_repo')}
+                data-testid="delete-repo-btn"
+                on:click={() => {
+                  deleteRepo(repo.id)
+                }}
+              >
+                🗑️
+              </button>
+            </div>
           </div>
           <div class="entity-meta-list">
             {#if typeof repo.address === 'string' && repo.address.length > 0}
@@ -1184,6 +2193,28 @@
           <div class="entity-card-header">
             <span class="entity-id-badge">{m.id}</span>
             <h4 class="entity-card-title">{m.title ?? m.id}</h4>
+            <div class="card-action-btns">
+              <button
+                class="icon-action-btn"
+                title={$_('records.edit_media')}
+                data-testid="edit-media-btn"
+                on:click={() => {
+                  openEditMediaModal(m)
+                }}
+              >
+                ✏️
+              </button>
+              <button
+                class="icon-action-btn delete"
+                title={$_('records.delete_media')}
+                data-testid="delete-media-btn"
+                on:click={() => {
+                  deleteMedia(m.id)
+                }}
+              >
+                🗑️
+              </button>
+            </div>
           </div>
           <div class="entity-meta-list">
             {#if typeof m.filePath === 'string' && m.filePath.length > 0}
@@ -1371,6 +2402,788 @@
         >
           {$_('records.save_changes')}
         </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if isEditingFamily || isCreatingFamily}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div
+    class="modal-backdrop"
+    on:click|self={() => {
+      isEditingFamily = false
+      isCreatingFamily = false
+    }}
+  >
+    <div class="edit-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">{isCreatingFamily ? $_('records.add_family') : $_('records.edit_family')}</h3>
+        <button
+          class="modal-close-btn"
+          on:click={() => {
+            isEditingFamily = false
+            isCreatingFamily = false
+          }}>&times;</button
+        >
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-fam-id">ID</label>
+          <input id="edit-fam-id" type="text" class="form-input" disabled value={editFamId} />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-fam-husb">{$_('records.husband')}</label>
+            <select id="edit-fam-husb" class="form-input" bind:value={editFamHusbandId} data-testid="edit-family-husband">
+              <option value="">{$_('records.none_unlinked')}</option>
+              {#each individuals as person (person.id)}
+                <option value={person.id}>{person.id} — {cleanName(person.name)} {formatLifespan(person.birth, person.death)}</option>
+              {/each}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-fam-wife">{$_('records.wife')}</label>
+            <select id="edit-fam-wife" class="form-input" bind:value={editFamWifeId} data-testid="edit-family-wife">
+              <option value="">{$_('records.none_unlinked')}</option>
+              {#each individuals as person (person.id)}
+                <option value={person.id}>{person.id} — {cleanName(person.name)} {formatLifespan(person.birth, person.death)}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-fam-marr-date">{$_('records.marriage_date')}</label>
+            <input
+              id="edit-fam-marr-date"
+              type="text"
+              class="form-input"
+              bind:value={editFamMarriageDate}
+              placeholder="e.g. 15 JUN 1920"
+              data-testid="edit-family-marriage-date"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-fam-marr-place">{$_('records.marriage_place')}</label>
+            <input
+              id="edit-fam-marr-place"
+              type="text"
+              class="form-input"
+              bind:value={editFamMarriagePlace}
+              placeholder="e.g. London, UK"
+              data-testid="edit-family-marriage-place"
+            />
+          </div>
+        </div>
+
+        <div class="form-group-checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" bind:checked={editFamDivorced} data-testid="edit-family-divorced" />
+            <span>{$_('records.is_divorced')}</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-family-add-child-select">{$_('records.children')} ({editFamChildrenIds.length})</label>
+          <div class="children-manager">
+            {#if editFamChildrenIds.length > 0}
+              <div class="selected-children-chips">
+                {#each editFamChildrenIds as cid}
+                  {@const ch = indiMap.get(cid)}
+                  <span class="child-chip">
+                    {ch?.sex === 'M' ? '👦' : '👧'} {cleanName(ch?.name)} ({cid})
+                    <button
+                      type="button"
+                      class="remove-chip-btn"
+                      on:click={() => {
+                        editFamChildrenIds = editFamChildrenIds.filter((id) => id !== cid)
+                      }}
+                    >✕</button>
+                  </span>
+                {/each}
+              </div>
+            {/if}
+            <select
+              id="edit-family-add-child-select"
+              class="form-input add-child-select"
+              bind:value={editFamChildToAdd}
+              data-testid="edit-family-add-child-select"
+              on:change={() => {
+                if (editFamChildToAdd.length > 0 && !editFamChildrenIds.includes(editFamChildToAdd)) {
+                  editFamChildrenIds = [...editFamChildrenIds, editFamChildToAdd]
+                  editFamChildToAdd = ''
+                }
+              }}
+            >
+              <option value="">+ Add child...</option>
+              {#each individuals.filter((i) => !editFamChildrenIds.includes(i.id)) as cand (cand.id)}
+                <option value={cand.id}>{cand.id} — {cleanName(cand.name)} {formatLifespan(cand.birth, cand.death)}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-fam-notes">{$_('records.notes_field')}</label>
+          <textarea
+            id="edit-fam-notes"
+            class="form-textarea"
+            rows="3"
+            bind:value={editFamNotes}
+            placeholder="Family notes..."
+            data-testid="edit-family-notes"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="modal-btn secondary"
+          on:click={() => {
+            isEditingFamily = false
+            isCreatingFamily = false
+          }}
+          data-testid="cancel-family-btn"
+        >
+          {$_('records.cancel')}
+        </button>
+        <button
+          class="modal-btn primary"
+          on:click={saveFamily}
+          data-testid="save-family-btn"
+        >
+          {$_('records.save_changes')}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if isEditingSource || isCreatingSource}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div
+    class="modal-backdrop"
+    on:click|self={() => {
+      isEditingSource = false
+      isCreatingSource = false
+    }}
+  >
+    <div class="edit-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">{isCreatingSource ? $_('records.add_source') : $_('records.edit_source')}</h3>
+        <button
+          class="modal-close-btn"
+          on:click={() => {
+            isEditingSource = false
+            isCreatingSource = false
+          }}>&times;</button
+        >
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-src-id">ID</label>
+          <input id="edit-src-id" type="text" class="form-input" disabled value={editSourceId} />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-src-title">{$_('records.source_title')}</label>
+          <input
+            id="edit-src-title"
+            type="text"
+            class="form-input"
+            bind:value={editSourceTitle}
+            placeholder="Source title or description"
+            data-testid="edit-source-title"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-src-author">{$_('records.source_author')}</label>
+            <input
+              id="edit-src-author"
+              type="text"
+              class="form-input"
+              bind:value={editSourceAuthor}
+              placeholder="Author or creator"
+              data-testid="edit-source-author"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-src-repo">{$_('records.source_repo')}</label>
+            <select id="edit-src-repo" class="form-input" bind:value={editSourceRepoId} data-testid="edit-source-repo">
+              <option value="">{$_('records.none_unlinked')}</option>
+              {#each repoList as r (r.id)}
+                <option value={r.id}>{r.id} — {r.name ?? r.id}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-src-pub">{$_('records.source_publication')}</label>
+          <input
+            id="edit-src-pub"
+            type="text"
+            class="form-input"
+            bind:value={editSourcePublication}
+            placeholder="Publication facts or agency"
+            data-testid="edit-source-publication"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-src-notes">{$_('records.notes_field')}</label>
+          <textarea
+            id="edit-src-notes"
+            class="form-textarea"
+            rows="3"
+            bind:value={editSourceNotes}
+            placeholder="Source notes or transcripts..."
+            data-testid="edit-source-notes"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="modal-btn secondary"
+          on:click={() => {
+            isEditingSource = false
+            isCreatingSource = false
+          }}
+          data-testid="cancel-source-btn"
+        >
+          {$_('records.cancel')}
+        </button>
+        <button
+          class="modal-btn primary"
+          on:click={saveSource}
+          data-testid="save-source-btn"
+        >
+          {$_('records.save_changes')}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if isEditingRepo || isCreatingRepo}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div
+    class="modal-backdrop"
+    on:click|self={() => {
+      isEditingRepo = false
+      isCreatingRepo = false
+    }}
+  >
+    <div class="edit-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">{isCreatingRepo ? $_('records.add_repo') : $_('records.edit_repo')}</h3>
+        <button
+          class="modal-close-btn"
+          on:click={() => {
+            isEditingRepo = false
+            isCreatingRepo = false
+          }}>&times;</button
+        >
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-repo-id">ID</label>
+          <input id="edit-repo-id" type="text" class="form-input" disabled value={editRepoId} />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-repo-name">{$_('records.repo_name')}</label>
+          <input
+            id="edit-repo-name"
+            type="text"
+            class="form-input"
+            bind:value={editRepoName}
+            placeholder="Archive or library name"
+            data-testid="edit-repo-name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-repo-address">{$_('records.repo_address')}</label>
+          <input
+            id="edit-repo-address"
+            type="text"
+            class="form-input"
+            bind:value={editRepoAddress}
+            placeholder="Address or location"
+            data-testid="edit-repo-address"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-repo-phone">{$_('records.repo_phone')}</label>
+            <input
+              id="edit-repo-phone"
+              type="text"
+              class="form-input"
+              bind:value={editRepoPhone}
+              placeholder="+1 555-0199"
+              data-testid="edit-repo-phone"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-repo-email">{$_('records.repo_email')}</label>
+            <input
+              id="edit-repo-email"
+              type="email"
+              class="form-input"
+              bind:value={editRepoEmail}
+              placeholder="archive@example.org"
+              data-testid="edit-repo-email"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-repo-notes">{$_('records.notes_field')}</label>
+          <textarea
+            id="edit-repo-notes"
+            class="form-textarea"
+            rows="3"
+            bind:value={editRepoNotes}
+            placeholder="Repository notes or opening hours..."
+            data-testid="edit-repo-notes"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="modal-btn secondary"
+          on:click={() => {
+            isEditingRepo = false
+            isCreatingRepo = false
+          }}
+          data-testid="cancel-repo-btn"
+        >
+          {$_('records.cancel')}
+        </button>
+        <button
+          class="modal-btn primary"
+          on:click={saveRepo}
+          data-testid="save-repo-btn"
+        >
+          {$_('records.save_changes')}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if isEditingMedia || isCreatingMedia}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div
+    class="modal-backdrop"
+    on:click|self={() => {
+      isEditingMedia = false
+      isCreatingMedia = false
+    }}
+  >
+    <div class="edit-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">{isCreatingMedia ? $_('records.add_media') : $_('records.edit_media')}</h3>
+        <button
+          class="modal-close-btn"
+          on:click={() => {
+            isEditingMedia = false
+            isCreatingMedia = false
+          }}>&times;</button
+        >
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-med-id">ID</label>
+          <input id="edit-med-id" type="text" class="form-input" disabled value={editMediaId} />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 2">
+            <label for="edit-med-title">{$_('records.media_title')}</label>
+            <input
+              id="edit-med-title"
+              type="text"
+              class="form-input"
+              bind:value={editMediaTitle}
+              placeholder="Title or caption"
+              data-testid="edit-media-title"
+            />
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label for="edit-med-fmt">{$_('records.media_format')}</label>
+            <input
+              id="edit-med-fmt"
+              type="text"
+              class="form-input"
+              bind:value={editMediaFormat}
+              placeholder="JPEG, PNG, PDF"
+              data-testid="edit-media-format"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-med-path">{$_('records.media_path')}</label>
+          <div class="file-path-row">
+            <input
+              id="edit-med-path"
+              type="text"
+              class="form-input"
+              bind:value={editMediaFilePath}
+              placeholder="/path/to/media.jpg"
+              data-testid="edit-media-path"
+            />
+            <button
+              type="button"
+              class="browse-btn"
+              data-testid="browse-media-file-btn"
+              on:click={() => {
+                void browseMediaFile()
+              }}
+            >
+              📁 {$_('records.browse_file')}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-med-notes">{$_('records.notes_field')}</label>
+          <textarea
+            id="edit-med-notes"
+            class="form-textarea"
+            rows="3"
+            bind:value={editMediaNotes}
+            placeholder="Multimedia notes..."
+            data-testid="edit-media-notes"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="modal-btn secondary"
+          on:click={() => {
+            isEditingMedia = false
+            isCreatingMedia = false
+          }}
+          data-testid="cancel-media-btn"
+        >
+          {$_('records.cancel')}
+        </button>
+        <button
+          class="modal-btn primary"
+          on:click={saveMedia}
+          data-testid="save-media-btn"
+        >
+          {$_('records.save_changes')}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if isEditingEvent || isCreatingEvent}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div
+    class="modal-backdrop"
+    on:click|self={() => {
+      isEditingEvent = false
+      isCreatingEvent = false
+    }}
+  >
+    <div class="edit-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">{isCreatingEvent ? $_('records.add_event') : $_('records.edit_event')}</h3>
+        <button
+          class="modal-close-btn"
+          on:click={() => {
+            isEditingEvent = false
+            isCreatingEvent = false
+          }}>&times;</button
+        >
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-ev-type">{$_('records.event_type')}</label>
+          <select id="edit-ev-type" class="form-input" bind:value={editEventType} data-testid="edit-event-type">
+            <option value="BIRT">{$_('records.event_types.BIRT', { default: 'Birth' })}</option>
+            <option value="CHR">{$_('records.event_types.CHR', { default: 'Christening' })}</option>
+            <option value="BAPM">{$_('records.event_types.BAPM', { default: 'Baptism' })}</option>
+            <option value="ADOP">{$_('records.event_types.ADOP', { default: 'Adoption' })}</option>
+            <option value="DEAT">{$_('records.event_types.DEAT', { default: 'Death' })}</option>
+            <option value="BURI">{$_('records.event_types.BURI', { default: 'Burial' })}</option>
+            <option value="CREM">{$_('records.event_types.CREM', { default: 'Cremation' })}</option>
+            <option value="OCCU">{$_('records.event_types.OCCU', { default: 'Occupation' })}</option>
+            <option value="RESI">{$_('records.event_types.RESI', { default: 'Residence' })}</option>
+            <option value="EDUC">{$_('records.event_types.EDUC', { default: 'Education' })}</option>
+            <option value="GRAD">{$_('records.event_types.GRAD', { default: 'Graduation' })}</option>
+            <option value="EMIG">{$_('records.event_types.EMIG', { default: 'Emigration' })}</option>
+            <option value="IMMI">{$_('records.event_types.IMMI', { default: 'Immigration' })}</option>
+            <option value="CENS">{$_('records.event_types.CENS', { default: 'Census' })}</option>
+            <option value="NATU">{$_('records.event_types.NATU', { default: 'Naturalization' })}</option>
+            <option value="RETI">{$_('records.event_types.RETI', { default: 'Retirement' })}</option>
+            <option value="PROB">{$_('records.event_types.PROB', { default: 'Probate' })}</option>
+            <option value="WILL">{$_('records.event_types.WILL', { default: 'Will' })}</option>
+            <option value="EVEN">{$_('records.event_types.EVEN', { default: 'Custom / Other Event' })}</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-ev-date">{$_('records.event_date')}</label>
+            <input
+              id="edit-ev-date"
+              type="text"
+              class="form-input"
+              bind:value={editEventDate}
+              placeholder="e.g. 10 MAY 1945"
+              data-testid="edit-event-date"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-ev-place">{$_('records.event_place')}</label>
+            <input
+              id="edit-ev-place"
+              type="text"
+              class="form-input"
+              bind:value={editEventPlace}
+              placeholder="e.g. Paris, France"
+              data-testid="edit-event-place"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-ev-val">{$_('records.event_value')}</label>
+            <input
+              id="edit-ev-val"
+              type="text"
+              class="form-input"
+              bind:value={editEventValue}
+              placeholder="e.g. Blacksmith, or Custom Event Type"
+              data-testid="edit-event-val"
+            />
+          </div>
+          {#if editEventType === 'DEAT'}
+            <div class="form-group">
+              <label for="edit-ev-cause">{$_('records.event_cause')}</label>
+              <input
+                id="edit-ev-cause"
+                type="text"
+                class="form-input"
+                bind:value={editEventCause}
+                placeholder="e.g. Heart failure"
+                data-testid="edit-event-cause"
+              />
+            </div>
+          {/if}
+        </div>
+
+        <div class="form-group">
+          <label for="edit-ev-notes">{$_('records.notes_field')}</label>
+          <textarea
+            id="edit-ev-notes"
+            class="form-textarea"
+            rows="3"
+            bind:value={editEventNotes}
+            placeholder="Event details or notes..."
+            data-testid="edit-event-notes"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="modal-btn secondary"
+          on:click={() => {
+            isEditingEvent = false
+            isCreatingEvent = false
+          }}
+          data-testid="cancel-event-btn"
+        >
+          {$_('records.cancel')}
+        </button>
+        <button
+          class="modal-btn primary"
+          on:click={saveEvent}
+          data-testid="save-event-btn"
+        >
+          {$_('records.save_changes')}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if isEditingCitation || isCreatingCitation}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div
+    class="modal-backdrop"
+    on:click|self={() => {
+      isEditingCitation = false
+      isCreatingCitation = false
+    }}
+  >
+    <div class="edit-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">{isCreatingCitation ? $_('records.add_citation') : $_('records.edit_citation')}</h3>
+        <button
+          class="modal-close-btn"
+          on:click={() => {
+            isEditingCitation = false
+            isCreatingCitation = false
+          }}>&times;</button
+        >
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-cit-src">{$_('records.select_source')}</label>
+          <select id="edit-cit-src" class="form-input" bind:value={editCitationSourceId} data-testid="edit-citation-source">
+            {#each sourceList as s (s.id)}
+              <option value={s.id}>{s.id} — {s.title ?? s.id}</option>
+            {/each}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-cit-page">{$_('records.citation_page')}</label>
+            <input
+              id="edit-cit-page"
+              type="text"
+              class="form-input"
+              bind:value={editCitationPage}
+              placeholder="Page 42, entry 7"
+              data-testid="edit-citation-page"
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-cit-quay">{$_('records.citation_quay')}</label>
+            <select id="edit-cit-quay" class="form-input" bind:value={editCitationQuay} data-testid="edit-citation-quay">
+              <option value={undefined}>None / Unspecified</option>
+              <option value={0}>{$_('records.quay_0')}</option>
+              <option value={1}>{$_('records.quay_1')}</option>
+              <option value={2}>{$_('records.quay_2')}</option>
+              <option value={3}>{$_('records.quay_3')}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-cit-text">{$_('records.citation_text')}</label>
+          <textarea
+            id="edit-cit-text"
+            class="form-textarea"
+            rows="3"
+            bind:value={editCitationText}
+            placeholder="Text excerpt from original document..."
+            data-testid="edit-citation-text"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="modal-btn secondary"
+          on:click={() => {
+            isEditingCitation = false
+            isCreatingCitation = false
+          }}
+          data-testid="cancel-citation-btn"
+        >
+          {$_('records.cancel')}
+        </button>
+        <button
+          class="modal-btn primary"
+          on:click={saveCitation}
+          data-testid="save-citation-btn"
+        >
+          {$_('records.save_changes')}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if isAttachingMedia}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div
+    class="modal-backdrop"
+    on:click|self={() => {
+      isAttachingMedia = false
+    }}
+  >
+    <div class="edit-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">{$_('records.attach_media')}</h3>
+        <button
+          class="modal-close-btn"
+          on:click={() => {
+            isAttachingMedia = false
+          }}>&times;</button
+        >
+      </div>
+
+      <div class="modal-body">
+        {#if mediaList.length === 0}
+          <p class="text-muted">No multimedia records currently exist in dataset.</p>
+          <button
+            class="action-pill-btn add-btn"
+            on:click={() => {
+              isAttachingMedia = false
+              openCreateMediaModal()
+            }}
+          >
+            ➕ {$_('records.add_media')}
+          </button>
+        {:else}
+          <div class="form-group">
+            <label for="attach-med-select">{$_('records.select_media')}</label>
+            <select id="attach-med-select" class="form-input" bind:value={attachMediaSelectId} data-testid="attach-media-select">
+              {#each mediaList as m (m.id)}
+                <option value={m.id}>{m.id} — {m.title ?? m.id} ({m.format ?? 'OBJE'})</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="modal-btn secondary"
+          on:click={() => {
+            isAttachingMedia = false
+          }}
+        >
+          {$_('records.cancel')}
+        </button>
+        {#if mediaList.length > 0}
+          <button
+            class="modal-btn primary"
+            on:click={attachMediaToPerson}
+            data-testid="confirm-attach-media-btn"
+          >
+            {$_('records.attach_media')}
+          </button>
+        {/if}
       </div>
     </div>
   </div>
@@ -2373,5 +4186,294 @@
 
   .modal-btn.primary:hover {
     background: #2563eb;
+  }
+
+  .entity-actions-bar {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+  }
+
+  .add-entity-btn {
+    background: #3b82f6;
+    border: none;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .add-entity-btn:hover {
+    background: #2563eb;
+  }
+
+  .family-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .family-spouses-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+  }
+
+  .spouse-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .spouse-role {
+    font-weight: 600;
+    color: #a0aec0;
+    font-size: 12px;
+    min-width: 130px;
+  }
+
+  .divorce-badge {
+    display: inline-block;
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .family-notes-text {
+    font-size: 12px;
+    color: #cbd5e0;
+    font-style: italic;
+  }
+
+  .card-action-btns {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .icon-action-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: #cbd5e0;
+    font-size: 12px;
+    padding: 3px 7px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .icon-action-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
+
+  .icon-action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+  }
+
+  .icon-action-btn.mini {
+    padding: 1px 5px;
+    font-size: 11px;
+  }
+
+  .section-heading-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .section-heading-row .section-heading {
+    margin-bottom: 0;
+  }
+
+  .action-pill-btn.add-btn {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .action-pill-btn.add-btn:hover {
+    background: rgba(59, 130, 246, 0.35);
+    color: #ffffff;
+  }
+
+  .action-pill-btn.mini {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #93c5fd;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .action-pill-btn.mini:hover {
+    background: rgba(59, 130, 246, 0.25);
+    color: #ffffff;
+  }
+
+  .item-action-btns {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .file-path-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .browse-btn {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+
+  .browse-btn:hover {
+    background: rgba(59, 130, 246, 0.4);
+    color: #ffffff;
+  }
+
+  .media-mini-card-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .detach-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #f87171;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .detach-btn:hover {
+    background: #ef4444;
+    color: #ffffff;
+  }
+
+  .citation-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .citation-full-card {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .citation-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .citation-card-body {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+
+  .form-group-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #e2e8f0;
+    cursor: pointer;
+  }
+
+  .children-manager {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .selected-children-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .child-chip {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #bfdbfe;
+    border-radius: 12px;
+    padding: 3px 8px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .remove-chip-btn {
+    background: transparent;
+    border: none;
+    color: #f87171;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .remove-chip-btn:hover {
+    color: #ef4444;
+  }
+
+  .add-child-select {
+    width: 100%;
   }
 </style>

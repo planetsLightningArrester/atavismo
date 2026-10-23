@@ -36,6 +36,14 @@ interface SerializeResult {
   error?: string
 }
 
+interface PickMediaResponse {
+  canceled: boolean
+  filePath?: string
+  format?: string
+  title?: string
+  error?: string
+}
+
 /** Represents event details such as birth, death, or marriage. */
 interface EventDetails {
   date?: string
@@ -63,6 +71,7 @@ interface LifeEvent {
   cause?: string
   notes?: string
   citations: Citation[]
+  mediaIds?: string[]
 }
 
 /** Represents a historical source record (SOUR). */
@@ -224,6 +233,10 @@ interface Window {
      * Opens native file save dialog
      */
     saveFileDialog: (defaultName?: string) => Promise<SaveDialogResponse>
+    /**
+     * Opens native file picker to select a multimedia asset
+     */
+    pickMediaFile: () => Promise<PickMediaResponse>
     /**
      * Saves raw GEDCOM text to file
      */

@@ -177,6 +177,39 @@ export async function server(win: BrowserWindow): Promise<void> {
     }
   })
 
+  ipcMain.on('dialog-pick-media', async () => {
+    try {
+      const result = await dialog.showOpenDialog(win, {
+        title: 'Select Multimedia File',
+        properties: ['openFile'],
+        filters: [
+          { name: 'Multimedia Files (*.jpg, *.png, *.webp, *.pdf, *.mp3, *.mp4)', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'pdf', 'mp3', 'wav', 'mp4'] },
+          { name: 'All Files (*.*)', extensions: ['*'] }
+        ]
+      })
+      if (result.canceled || result.filePaths.length === 0) {
+        win.webContents.send('dialog-pick-media-result', { canceled: true })
+        return
+      }
+      const selectedPath = result.filePaths[0]
+      const ext = path.extname(selectedPath).replace('.', '').toUpperCase()
+      const title = path.basename(selectedPath, path.extname(selectedPath))
+      win.webContents.send('dialog-pick-media-result', {
+        canceled: false,
+        filePath: selectedPath,
+        format: ext,
+        title
+      })
+    } catch (error: unknown) {
+      const msg = `Media dialog error: ${error instanceof Error ? error.message : String(error)}`
+      err.log(msg)
+      win.webContents.send('dialog-pick-media-result', {
+        canceled: true,
+        error: msg
+      })
+    }
+  })
+
   ipcMain.on('dialog-save-file', async (_, defaultName?: string) => {
     try {
       const result = await dialog.showSaveDialog(win, {

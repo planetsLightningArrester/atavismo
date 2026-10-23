@@ -266,4 +266,47 @@ test.describe('GedcomSerializer Unit Tests', () => {
     const repF2 = reparsed.families.find(f => f.id === '@F2@')
     expect(repF2?.childrenIds).toContain('@I5@')
   })
+
+  test('serializes custom EVEN events with TYPE and event-level media references with roundtrip fidelity', () => {
+    const data = new GedcomData()
+
+    const med = new MediaRecord()
+    med.id = '@O2@'
+    med.title = 'Military Portrait'
+    med.format = 'PNG'
+    med.filePath = 'photos/portrait.png'
+    data.media[med.id] = med
+
+    const indi = new Individual()
+    indi.id = '@I1@'
+    indi.givenName = 'George'
+    indi.surname = 'Washington'
+
+    const ev = new LifeEvent()
+    ev.type = 'EVEN'
+    ev.value = 'Military Commission'
+    ev.date = '15 JUN 1775'
+    ev.place = 'Philadelphia, PA'
+    ev.notes = 'Appointed Commander-in-Chief of Continental Army'
+    ev.mediaIds = ['@O2@']
+    indi.events.push(ev)
+
+    data.individuals.push(indi)
+
+    const serialized = GedcomSerializer.serialize(data)
+    expect(serialized).toContain('1 EVEN')
+    expect(serialized).toContain('2 TYPE Military Commission')
+    expect(serialized).toContain('2 DATE 15 JUN 1775')
+    expect(serialized).toContain('2 PLAC Philadelphia, PA')
+    expect(serialized).toContain('2 OBJE @O2@')
+
+    const reparsed = GedcomParser.parse(serialized)
+    expect(reparsed.individuals.length).toBe(1)
+    const reparsedIndi = reparsed.individuals[0]
+    expect(reparsedIndi.events.length).toBe(1)
+    const reparsedEv = reparsedIndi.events[0]
+    expect(reparsedEv.type).toBe('EVEN')
+    expect(reparsedEv.value).toBe('Military Commission')
+    expect(reparsedEv.mediaIds).toContain('@O2@')
+  })
 })

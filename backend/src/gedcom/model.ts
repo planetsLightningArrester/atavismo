@@ -31,6 +31,7 @@ export class LifeEvent {
   cause?: string
   notes?: string
   citations: Citation[] = []
+  mediaIds: string[] = []
 }
 
 /**

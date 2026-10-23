@@ -340,4 +340,123 @@ test.describe.serial('Atavismo E2E Tests', () => {
     await expect(window.getByTestId('save-file-button')).toBeVisible()
     await expect(window.getByTestId('save-as-button')).toBeVisible()
   })
+
+  test('tests Phase 6 full authoring suite: Families, Sources, Repositories, Multimedia, Life Events, Citations, and Submitter metadata', async () => {
+    // 1. Overview Tab: Edit Submitter & Dataset Metadata
+    const overviewTab = window.getByTestId('tab-overview')
+    await overviewTab.click()
+    const editMetaBtn = window.getByTestId('edit-metadata-btn')
+    await expect(editMetaBtn).toBeVisible()
+    await editMetaBtn.click()
+
+    const modal = window.locator('.edit-modal-card')
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-submitter-name').fill('Dr. Eleanor Vance')
+    await window.getByTestId('edit-submitter-address').fill('456 Heritage Way, Cambridge, MA')
+    await window.getByTestId('edit-submitter-email').fill('eleanor@archives.org')
+    await window.getByTestId('edit-meta-source').fill('ATAVISMO_PRO')
+    await window.getByTestId('save-metadata-btn').click()
+    await expect(modal).not.toBeVisible()
+
+    await expect(window.getByTestId('unsaved-badge')).toBeVisible()
+    await expect(window.locator('.meta-list')).toContainText('Dr. Eleanor Vance')
+    await expect(window.locator('.meta-list')).toContainText('ATAVISMO_PRO')
+
+    // 2. Navigate to Records Tab
+    await window.getByTestId('tab-records').click()
+
+    // 3. Repositories Subtab: Create Repository
+    await window.getByTestId('records-subtab-repositories').click()
+    await expect(window.getByTestId('repositories-explorer-grid')).toBeVisible()
+    await window.getByTestId('add-repo-btn').click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-repo-name').fill('New England Historic Genealogical Society')
+    await window.getByTestId('edit-repo-address').fill('99-101 Newbury Street, Boston, MA')
+    await window.getByTestId('edit-repo-phone').fill('+1 617-536-5740')
+    await window.getByTestId('save-repo-btn').click()
+    await expect(modal).not.toBeVisible()
+    await expect(window.getByTestId('repositories-explorer-grid')).toContainText('New England Historic Genealogical Society')
+
+    // 4. Sources Subtab: Create Source linked to Repository
+    await window.getByTestId('records-subtab-sources').click()
+    await expect(window.getByTestId('sources-explorer-grid')).toBeVisible()
+    await window.getByTestId('add-source-btn').click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-source-title').fill('Vital Records of Massachusetts to 1850')
+    await window.getByTestId('edit-source-author').fill('Commonwealth of Massachusetts')
+    await window.getByTestId('edit-source-publication').fill('Boston Historical Society, 1902')
+    await window.getByTestId('save-source-btn').click()
+    await expect(modal).not.toBeVisible()
+    await expect(window.getByTestId('sources-explorer-grid')).toContainText('Vital Records of Massachusetts to 1850')
+
+    // 5. Multimedia Subtab: Create Multimedia Record
+    await window.getByTestId('records-subtab-media').click()
+    await expect(window.getByTestId('media-explorer-grid')).toBeVisible()
+    await window.getByTestId('add-media-btn').click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-media-title').fill('Parish Register Ledger Scan')
+    await window.getByTestId('edit-media-format').fill('PNG')
+    await window.getByTestId('edit-media-path').fill('documents/ledger_1850.png')
+    await window.getByTestId('save-media-btn').click()
+    await expect(modal).not.toBeVisible()
+    await expect(window.getByTestId('media-explorer-grid')).toContainText('Parish Register Ledger Scan')
+
+    // 6. Families Subtab: Create Family Unit with Marriage and Divorce
+    await window.getByTestId('records-subtab-families').click()
+    await expect(window.getByTestId('families-explorer-grid')).toBeVisible()
+    await window.getByTestId('add-family-btn').click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-family-marriage-date').fill('24 OCT 1888')
+    await window.getByTestId('edit-family-marriage-place').fill('Salem, Essex, Massachusetts')
+    await window.getByTestId('edit-family-divorced').check()
+    await window.getByTestId('edit-family-notes').fill('Separated in 1895, formal divorce granted in 1898.')
+    await window.getByTestId('save-family-btn').click()
+    await expect(modal).not.toBeVisible()
+    await expect(window.getByTestId('families-explorer-grid')).toContainText('Salem, Essex, Massachusetts')
+    await expect(window.getByTestId('families-explorer-grid')).toContainText('💔')
+
+    // 7. Individuals Subtab: Add Life Event and Citations
+    await window.getByTestId('records-subtab-individuals').click()
+    await expect(window.locator('.records-table')).toBeVisible()
+
+    // Add Baptism Event on selected person
+    await window.getByTestId('add-event-btn').click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-event-type').selectOption('BAPM')
+    await window.getByTestId('edit-event-date').fill('12 APR 1830')
+    await window.getByTestId('edit-event-place').fill('First Parish Church, Boston')
+    await window.getByTestId('save-event-btn').click()
+    await expect(modal).not.toBeVisible()
+    await expect(window.getByTestId('inspector-timeline')).toContainText('First Parish Church, Boston')
+
+    // Add Event Citation
+    const addEventCitBtn = window.getByTestId('add-event-citation-btn').first()
+    await addEventCitBtn.click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-citation-page').fill('Page 88, Entry 14')
+    await window.getByTestId('edit-citation-quay').selectOption('3')
+    await window.getByTestId('edit-citation-text').fill('Baptized on the twelfth day of April.')
+    await window.getByTestId('save-citation-btn').click()
+    await expect(modal).not.toBeVisible()
+    await expect(window.getByTestId('inspector-timeline')).toContainText('Page 88, Entry 14')
+
+    // Add Person Citation
+    await window.getByTestId('add-citation-btn').click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-citation-page').fill('General Register Vol. II')
+    await window.getByTestId('save-citation-btn').click()
+    await expect(modal).not.toBeVisible()
+    await expect(window.getByTestId('inspector-citations-section')).toContainText('General Register Vol. II')
+
+    // 8. Attach and Detach Multimedia
+    await window.getByTestId('attach-media-btn').click()
+    await expect(modal).toBeVisible()
+    await window.getByTestId('confirm-attach-media-btn').click()
+    await expect(modal).not.toBeVisible()
+
+    const detachBtn = window.getByTestId('detach-media-btn').first()
+    await expect(detachBtn).toBeVisible()
+    await detachBtn.click()
+    await expect(detachBtn).not.toBeVisible()
+  })
 })

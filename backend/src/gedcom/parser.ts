@@ -313,6 +313,10 @@ export class GedcomParser {
             currentEvent.place = line.value.trim()
           } else if (line.tag === 'CAUS' && line.value !== undefined) {
             currentEvent.cause = line.value.trim()
+          } else if (line.tag === 'TYPE' && line.value !== undefined) {
+            currentEvent.value = line.value.trim()
+          } else if (line.tag === 'OBJE' && line.value !== undefined) {
+            currentEvent.mediaIds.push(line.value.trim())
           } else if (line.tag === 'SOUR' && line.value !== undefined) {
             const cit = new Citation()
             cit.sourceId = line.value.trim()
@@ -476,6 +480,10 @@ export class GedcomParser {
             currentEvent.year = GedcomParser.extractYear(currentEvent.date)
           } else if (line.tag === 'PLAC' && line.value !== undefined) {
             currentEvent.place = line.value.trim()
+          } else if (line.tag === 'TYPE' && line.value !== undefined) {
+            currentEvent.value = line.value.trim()
+          } else if (line.tag === 'OBJE' && line.value !== undefined) {
+            currentEvent.mediaIds.push(line.value.trim())
           } else if (line.tag === 'SOUR' && line.value !== undefined) {
             const cit = new Citation()
             cit.sourceId = line.value.trim()
@@ -524,6 +532,15 @@ export class GedcomParser {
           } else if (line.tag === 'QUAY' && line.value !== undefined) {
             const q = parseInt(line.value, 10)
             if (!isNaN(q)) lastCit.quay = q
+          } else if (line.tag === 'DATA') {
+            // Container for text
+          }
+        }
+      } else if (line.level === 4) {
+        if (currentEvent !== undefined && currentEvent.citations.length > 0) {
+          const lastCit = currentEvent.citations[currentEvent.citations.length - 1]
+          if (line.tag === 'TEXT' && line.value !== undefined) {
+            lastCit.text = line.value.trim()
           }
         }
       }
@@ -785,6 +802,11 @@ export class GedcomParser {
             GedcomParser.addDiagnostic(data, 'INFO', `Family ${fam.id} event '${ev.type}' references unindexed source '${cit.sourceId}'`, 'SOUR')
           }
         }
+        for (const mId of ev.mediaIds) {
+          if (mId.length > 0 && !mediaIds.has(mId)) {
+            GedcomParser.addDiagnostic(data, 'INFO', `Family ${fam.id} event '${ev.type}' references unindexed media ID '${mId}'`, 'OBJE')
+          }
+        }
       }
       for (const mId of fam.mediaIds) {
         if (mId.length > 0 && !mediaIds.has(mId)) {
@@ -814,6 +836,11 @@ export class GedcomParser {
         for (const cit of ev.citations) {
           if (cit.sourceId.length > 0 && !sourceIds.has(cit.sourceId)) {
             GedcomParser.addDiagnostic(data, 'INFO', `Individual ${indi.id} event '${ev.type}' references unindexed source '${cit.sourceId}'`, 'SOUR')
+          }
+        }
+        for (const mId of ev.mediaIds) {
+          if (mId.length > 0 && !mediaIds.has(mId)) {
+            GedcomParser.addDiagnostic(data, 'INFO', `Individual ${indi.id} event '${ev.type}' references unindexed media ID '${mId}'`, 'OBJE')
           }
         }
       }

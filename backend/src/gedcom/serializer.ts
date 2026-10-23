@@ -373,11 +373,17 @@ export class GedcomSerializer {
     if (ev.cause !== undefined && ev.cause.length > 0) {
       lines.push(`${nextLevel} CAUS ${ev.cause}`)
     }
+    if (ev.type === 'EVEN' && ev.value !== undefined && ev.value.length > 0) {
+      lines.push(`${nextLevel} TYPE ${ev.value}`)
+    }
     if (ev.notes !== undefined && ev.notes.length > 0) {
       GedcomSerializer.serializeNote(ev.notes, nextLevel, lines)
     }
     for (const cit of ev.citations) {
       GedcomSerializer.serializeCitation(cit, nextLevel, lines)
+    }
+    for (const mId of ev.mediaIds ?? []) {
+      lines.push(`${nextLevel} OBJE ${GedcomSerializer.formatId(mId)}`)
     }
   }
 

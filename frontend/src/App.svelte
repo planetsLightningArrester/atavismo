@@ -42,6 +42,58 @@
   let errorMessage = ''
   let isDragging = false
 
+  let isEditingMetadata = false
+  let editSubmName = ''
+  let editSubmAddress = ''
+  let editSubmEmail = ''
+  let editSubmPhone = ''
+  let editSubmLang = ''
+  let editMetaSource = ''
+  let editMetaCorp = ''
+  let editMetaNotes = ''
+
+  function openMetadataModal(): void {
+    if (gedcomData === undefined) return
+    editSubmName = gedcomData.submitter?.name ?? gedcomData.metadata.submitter ?? ''
+    editSubmAddress = gedcomData.submitter?.address ?? ''
+    editSubmEmail = gedcomData.submitter?.email ?? ''
+    editSubmPhone = gedcomData.submitter?.phone ?? ''
+    editSubmLang = gedcomData.submitter?.language ?? gedcomData.metadata.language ?? ''
+    editMetaSource = gedcomData.metadata.source ?? 'ATAVISMO'
+    editMetaCorp = gedcomData.metadata.corporation ?? ''
+    editMetaNotes = gedcomData.metadata.notes ?? ''
+    isEditingMetadata = true
+  }
+
+  function saveMetadataModal(): void {
+    if (gedcomData === undefined) return
+    if (gedcomData.submitter === undefined) {
+      gedcomData.submitter = {
+        id: '@SUBM1@',
+        name: editSubmName.trim(),
+        address: editSubmAddress.trim(),
+        email: editSubmEmail.trim(),
+        phone: editSubmPhone.trim(),
+        language: editSubmLang.trim(),
+      }
+    } else {
+      gedcomData.submitter.name = editSubmName.trim()
+      gedcomData.submitter.address = editSubmAddress.trim()
+      gedcomData.submitter.email = editSubmEmail.trim()
+      gedcomData.submitter.phone = editSubmPhone.trim()
+      gedcomData.submitter.language = editSubmLang.trim()
+    }
+    gedcomData.metadata.submitter = editSubmName.trim()
+    gedcomData.metadata.source = editMetaSource.trim()
+    gedcomData.metadata.corporation = editMetaCorp.trim()
+    gedcomData.metadata.notes = editMetaNotes.trim()
+    if (editSubmLang.trim().length > 0) {
+      gedcomData.metadata.language = editSubmLang.trim()
+    }
+    isEditingMetadata = false
+    handleDatasetChanged()
+  }
+
   onMount(() => {
     const handleKeydown = (e: KeyboardEvent): void => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
@@ -348,13 +400,22 @@
               </div>
 
               <div class="pane-card">
-                <h3 class="pane-title">📋 Dataset Metadata</h3>
+                <div class="pane-header-row">
+                  <h3 class="pane-title">📋 Dataset Metadata</h3>
+                  <button
+                    class="metadata-edit-btn"
+                    data-testid="edit-metadata-btn"
+                    on:click={openMetadataModal}
+                  >
+                    ✏️ {$_('records.edit_metadata')}
+                  </button>
+                </div>
                 <ul class="meta-list">
                   <li><span class="meta-key">{$_('dataset_metadata.software_source')}:</span> {gedcomData.metadata.source ?? 'Unknown'}</li>
                   <li><span class="meta-key">{$_('dataset_metadata.software_version')}:</span> {gedcomData.metadata.version ?? '—'}</li>
                   <li><span class="meta-key">{$_('dataset_metadata.gedcom_standard')}:</span> {gedcomData.metadata.atavismVersion ?? '5.5.1'}</li>
                   <li><span class="meta-key">{$_('dataset_metadata.character_encoding')}:</span> {gedcomData.metadata.encoding ?? 'UTF-8'}</li>
-                  <li><span class="meta-key">{$_('dataset_metadata.submitter')}:</span> {gedcomData.metadata.submitter ?? '—'}</li>
+                  <li><span class="meta-key">{$_('dataset_metadata.submitter')}:</span> {gedcomData.submitter?.name ?? gedcomData.metadata.submitter ?? '—'}</li>
                 </ul>
               </div>
             </div>
@@ -371,9 +432,9 @@
             <RecordsList
               bind:individuals={gedcomData.individuals}
               bind:families={gedcomData.families}
-              sources={gedcomData.sources}
-              repositories={gedcomData.repositories}
-              media={gedcomData.media}
+              bind:sources={gedcomData.sources}
+              bind:repositories={gedcomData.repositories}
+              bind:media={gedcomData.media}
               bind:selectedIndividualId
               onExploreInTree={() => {
                 activeTab = 'tree'
@@ -415,6 +476,128 @@
         {:else}
           <span>{$_('main_page.updating')}</span>
         {/if}
+      </div>
+    {/if}
+
+    {#if isEditingMetadata}
+      <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+      <div
+        class="modal-backdrop"
+        on:click|self={() => {
+          isEditingMetadata = false
+        }}
+      >
+        <div class="edit-modal-card" role="dialog" aria-modal="true">
+          <div class="modal-header">
+            <h3 class="modal-title">{$_('records.edit_metadata')}</h3>
+            <button
+              class="modal-close-btn"
+              on:click={() => {
+                isEditingMetadata = false
+              }}>&times;</button
+            >
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="edit-subm-name">{$_('records.submitter_name')}</label>
+              <input
+                id="edit-subm-name"
+                type="text"
+                class="form-input"
+                bind:value={editSubmName}
+                placeholder="Submitter or researcher name"
+                data-testid="edit-submitter-name"
+              />
+            </div>
+            <div class="form-group">
+              <label for="edit-subm-address">{$_('records.submitter_address')}</label>
+              <input
+                id="edit-subm-address"
+                type="text"
+                class="form-input"
+                bind:value={editSubmAddress}
+                placeholder="123 Street, City, Country"
+                data-testid="edit-submitter-address"
+              />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-subm-email">{$_('records.submitter_email')}</label>
+                <input
+                  id="edit-subm-email"
+                  type="email"
+                  class="form-input"
+                  bind:value={editSubmEmail}
+                  placeholder="name@example.com"
+                  data-testid="edit-submitter-email"
+                />
+              </div>
+              <div class="form-group">
+                <label for="edit-subm-phone">{$_('records.submitter_phone')}</label>
+                <input
+                  id="edit-subm-phone"
+                  type="text"
+                  class="form-input"
+                  bind:value={editSubmPhone}
+                  placeholder="+1 555-0100"
+                  data-testid="edit-submitter-phone"
+                />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-meta-source">{$_('records.software_source')}</label>
+                <input
+                  id="edit-meta-source"
+                  type="text"
+                  class="form-input"
+                  bind:value={editMetaSource}
+                  placeholder="ATAVISMO"
+                  data-testid="edit-meta-source"
+                />
+              </div>
+              <div class="form-group">
+                <label for="edit-meta-corp">{$_('records.corporation')}</label>
+                <input
+                  id="edit-meta-corp"
+                  type="text"
+                  class="form-input"
+                  bind:value={editMetaCorp}
+                  placeholder="Organization or company"
+                  data-testid="edit-meta-corp"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="edit-meta-notes">{$_('records.notes_field')}</label>
+              <textarea
+                id="edit-meta-notes"
+                class="form-textarea"
+                rows="3"
+                bind:value={editMetaNotes}
+                placeholder="Header notes or provenance..."
+                data-testid="edit-meta-notes"
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              class="modal-btn secondary"
+              on:click={() => {
+                isEditingMetadata = false
+              }}
+            >
+              {$_('records.cancel')}
+            </button>
+            <button
+              class="modal-btn primary"
+              on:click={saveMetadataModal}
+              data-testid="save-metadata-btn"
+            >
+              {$_('records.save_changes')}
+            </button>
+          </div>
+        </div>
       </div>
     {/if}
   </main>
@@ -762,5 +945,177 @@
 
   .update-btn:hover {
     background: #2f855a;
+  }
+
+  .pane-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .pane-header-row .pane-title {
+    margin-bottom: 0;
+  }
+
+  .metadata-edit-btn {
+    background: rgba(49, 130, 206, 0.2);
+    border: 1px solid rgba(49, 130, 206, 0.4);
+    color: #63b3ed;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .metadata-edit-btn:hover {
+    background: rgba(49, 130, 206, 0.4);
+    color: #ffffff;
+  }
+
+  /* Shared Modal Styles */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(11, 15, 25, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    padding: 20px;
+  }
+
+  .edit-modal-card {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .modal-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f3f4f6;
+  }
+
+  .modal-close-btn {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.15s ease;
+  }
+
+  .modal-close-btn:hover {
+    color: #f3f4f6;
+  }
+
+  .modal-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+  }
+
+  .form-input,
+  .form-textarea {
+    background: #1f2937;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #f3f4f6;
+    padding: 8px 12px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-input:focus,
+  .form-textarea:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    font-family: inherit;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .modal-btn {
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .modal-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e0;
+  }
+
+  .modal-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .modal-btn.primary {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+
+  .modal-btn.primary:hover {
+    background: #2563eb;
   }
 </style>

@@ -37,6 +37,14 @@ export interface SerializeResult {
   error?: string
 }
 
+export interface PickMediaResponse {
+  canceled: boolean
+  filePath?: string
+  format?: string
+  title?: string
+  error?: string
+}
+
 /** Context bridge. Map the IPC communication between the client and the server */
 contextBridge.exposeInMainWorld('api', {
   /**
@@ -83,6 +91,18 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.send('dialog-save-file', defaultName)
     return await new Promise<SaveDialogResponse>(resolve => {
       ipcRenderer.once('dialog-save-file-result', (_, result: SaveDialogResponse) => {
+        resolve(result)
+      })
+    })
+  },
+
+  /**
+   * Opens native OS file picker to select a multimedia asset
+   */
+  pickMediaFile: async (): Promise<PickMediaResponse> => {
+    ipcRenderer.send('dialog-pick-media')
+    return await new Promise<PickMediaResponse>(resolve => {
+      ipcRenderer.once('dialog-pick-media-result', (_, result: PickMediaResponse) => {
         resolve(result)
       })
     })
