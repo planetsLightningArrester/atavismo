@@ -47,7 +47,11 @@
     "export_gedcom": "导出 GEDCOM",
     "unsaved_changes": "未保存更改",
     "saved_successfully": "文件保存成功！",
-    "save_error": "保存文件失败。"
+    "save_error": "保存文件失败。",
+    "new_project": "新建家谱",
+    "new_project_desc": "创建新的家谱项目",
+    "close_file": "关闭文件",
+    "confirm_unsaved_discard": "您有未保存的更改。确定要在不保存的情况下关闭吗？"
   },
   "footer": {
     "github_page": "GitHub 仓库",

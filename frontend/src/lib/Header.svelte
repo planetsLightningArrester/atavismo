@@ -5,6 +5,8 @@
   export let activeTab: 'overview' | 'tree' | 'records' | 'analytics' | 'raw' = 'overview'
   export let onOpenFile: () => void
   export let onLoadSample: () => void
+  export let onNewProject: (() => void) | null = null
+  export let onCloseFile: (() => void) | null = null
   export let hasData: boolean = false
   export let fileName: string = ''
   export let isDirty: boolean = false
@@ -112,12 +114,32 @@
           📤 {$_('main_page.save_as')}
         </button>
       {/if}
+      {#if onNewProject !== null}
+        <button
+          class="action-btn new"
+          on:click={onNewProject}
+          data-testid="new-project-button"
+          title={$_('main_page.new_project_desc')}
+        >
+          ➕ {$_('main_page.new_project')}
+        </button>
+      {/if}
       <button class="action-btn primary" on:click={onOpenFile} data-testid="open-file-button">
         📂 {$_('main_page.open_file')}
       </button>
       <button class="action-btn secondary" on:click={onLoadSample} data-testid="load-sample-button">
         ✨ {$_('main_page.load_sample')}
       </button>
+      {#if hasData && onCloseFile !== null}
+        <button
+          class="action-btn danger-outline"
+          on:click={onCloseFile}
+          data-testid="close-file-button"
+          title={$_('main_page.close_file')}
+        >
+          ✕ {$_('main_page.close_file')}
+        </button>
+      {/if}
     </div>
 
     <div class="locales-wrapper">
@@ -232,6 +254,28 @@
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  .action-btn.new {
+    background: #0284c7;
+    border: 1px solid #38bdf8;
+    color: #ffffff;
+  }
+
+  .action-btn.new:hover {
+    background: #0369a1;
+  }
+
+  .action-btn.danger-outline {
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+  }
+
+  .action-btn.danger-outline:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #ffffff;
   }
 
   .action-btn.primary {

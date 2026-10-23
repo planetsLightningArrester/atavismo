@@ -47,7 +47,11 @@
     "export_gedcom": "Export GEDCOM",
     "unsaved_changes": "Unsaved Changes",
     "saved_successfully": "File saved successfully!",
-    "save_error": "Failed to save file."
+    "save_error": "Failed to save file.",
+    "new_project": "New Tree",
+    "new_project_desc": "Start a fresh family tree",
+    "close_file": "Close File",
+    "confirm_unsaved_discard": "You have unsaved changes. Are you sure you want to close without saving?"
   },
   "footer": {
     "github_page": "GitHub Repository",

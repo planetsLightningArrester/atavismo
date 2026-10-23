@@ -459,4 +459,56 @@ test.describe.serial('Atavismo E2E Tests', () => {
     await detachBtn.click()
     await expect(detachBtn).not.toBeVisible()
   })
+
+  test('tests closing current file to return to welcome screen, and creating a new project from welcome screen and header', async () => {
+    // 1. Close current open file (handling confirm dialog if dirty)
+    window.once('dialog', async (dialog) => {
+      await dialog.accept()
+    })
+    const closeBtn = window.getByTestId('close-file-button')
+    await expect(closeBtn).toBeVisible()
+    await closeBtn.click()
+
+    // 2. Verify returned to welcome screen
+    const heroCard = window.locator('.welcome-hero')
+    await expect(heroCard).toBeVisible()
+    await expect(window.getByTestId('hero-new-project-btn')).toBeVisible()
+    await expect(closeBtn).not.toBeVisible()
+
+    // 3. Create a new project from the welcome screen hero card
+    await window.getByTestId('hero-new-project-btn').click()
+    await expect(window.locator('.metric-card').first()).toBeVisible()
+    await expect(window.locator('.brand-file')).toContainText('new_family_tree.ged')
+
+    // 4. Navigate to Records tab and verify it is empty and ready for adding people
+    await window.getByTestId('tab-records').click()
+    const addPersonBtn = window.getByTestId('add-person-btn')
+    await expect(addPersonBtn).toBeVisible()
+    await addPersonBtn.click()
+
+    const modal = window.locator('.edit-modal-card')
+    await expect(modal).toBeVisible()
+    await window.getByTestId('edit-person-given-name').fill('Adam')
+    await window.getByTestId('edit-person-surname').fill('Founder')
+    await window.getByTestId('edit-person-sex').selectOption('M')
+    await window.getByTestId('edit-person-birth-date').fill('1 JAN 1900')
+    await window.getByTestId('edit-person-birth-place').fill('Springfield')
+    await window.getByTestId('save-edit-btn').click()
+    await expect(modal).not.toBeVisible()
+
+    // Verify individual added to the records table
+    await expect(window.locator('.records-table')).toContainText('Adam Founder')
+
+    // 5. Close the new project and return to welcome screen again
+    window.once('dialog', async (dialog) => {
+      await dialog.accept()
+    })
+    await window.getByTestId('close-file-button').click()
+    await expect(heroCard).toBeVisible()
+
+    // 6. Test creating a new project via the header button
+    await window.getByTestId('new-project-button').click()
+    await expect(window.locator('.metric-card').first()).toBeVisible()
+    await expect(window.locator('.brand-file')).toContainText('new_family_tree.ged')
+  })
 })

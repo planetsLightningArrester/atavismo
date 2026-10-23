@@ -47,7 +47,11 @@
     "export_gedcom": "Exportar GEDCOM",
     "unsaved_changes": "Alterações não salvas",
     "saved_successfully": "Arquivo salvo com sucesso!",
-    "save_error": "Falha ao salvar arquivo."
+    "save_error": "Falha ao salvar arquivo.",
+    "new_project": "Novo Projeto",
+    "new_project_desc": "Começar uma nova árvore genealógica",
+    "close_file": "Fechar Arquivo",
+    "confirm_unsaved_discard": "Você tem alterações não salvas. Tem certeza de que deseja fechar sem salvar?"
   },
   "footer": {
     "github_page": "Repositório GitHub",

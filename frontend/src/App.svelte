@@ -227,6 +227,82 @@
     }
   }
 
+  function createNewProject(): void {
+    if (gedcomData !== undefined && isDirty) {
+      // eslint-disable-next-line no-alert
+      const confirmed = window.confirm($_('main_page.confirm_unsaved_discard'))
+      if (!confirmed) return
+    }
+    const defaultData: GedcomData = {
+      metadata: {
+        source: 'ATAVISMO',
+        version: '1.0.0',
+        name: 'New Family Tree',
+        atavismVersion: '5.5.1',
+        encoding: 'UTF-8',
+        date: new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase(),
+        language: 'English',
+        notes: 'Created with Atavismo Genealogy Suite',
+      },
+      individuals: [],
+      families: [],
+      sources: {},
+      repositories: {},
+      media: {},
+      notes: {},
+      submitter: {
+        id: '@SUBM1@',
+        name: 'New Submitter',
+        address: '',
+        email: '',
+        phone: '',
+        language: 'English',
+      },
+      diagnostics: [],
+      stats: {
+        totalIndividuals: 0,
+        totalFamilies: 0,
+        maleCount: 0,
+        femaleCount: 0,
+        unknownSexCount: 0,
+        generationCount: 0,
+        topSurnames: [],
+        totalSources: 0,
+        totalRepositories: 0,
+        totalMedia: 0,
+        totalEvents: 0,
+        livingCount: 0,
+        deceasedCount: 0,
+      },
+    }
+    gedcomData = defaultData
+    loadedFileName = 'new_family_tree.ged'
+    loadedFilePath = undefined
+    rawText = ''
+    isDirty = false
+    activeTab = 'overview'
+    selectedIndividualId = ''
+    errorMessage = ''
+    saveToastMessage = ''
+  }
+
+  function closeCurrentFile(): void {
+    if (isDirty) {
+      // eslint-disable-next-line no-alert
+      const confirmed = window.confirm($_('main_page.confirm_unsaved_discard'))
+      if (!confirmed) return
+    }
+    gedcomData = undefined
+    loadedFileName = ''
+    loadedFilePath = undefined
+    rawText = ''
+    isDirty = false
+    activeTab = 'overview'
+    selectedIndividualId = ''
+    errorMessage = ''
+    saveToastMessage = ''
+  }
+
   async function openNativeFileDialog(): Promise<void> {
     isLoading = true
     errorMessage = ''
@@ -303,6 +379,8 @@
     bind:activeTab
     onOpenFile={openNativeFileDialog}
     onLoadSample={loadSampleTree}
+    onNewProject={createNewProject}
+    onCloseFile={closeCurrentFile}
     hasData={gedcomData !== undefined}
     fileName={loadedFileName}
     isDirty={isDirty}
@@ -345,8 +423,13 @@
             <div class="drop-subtitle">{$_('main_page.drag_drop_subtitle')}</div>
 
             <div class="hero-actions">
+              <button class="new-project-btn" on:click={createNewProject} data-testid="hero-new-project-btn">
+                ➕ {$_('main_page.new_project')}
+                <small class="sample-tag">{$_('main_page.new_project_desc')}</small>
+              </button>
+
               <label class="file-upload-btn" data-testid="choose-file-btn">
-                <span>{$_('main_page.choose_file')}</span>
+                <span>📂 {$_('main_page.choose_file')}</span>
                 <input type="file" accept=".ged,.gedcom,.txt" on:change={handleFileInput} style="display: none" />
               </label>
 
@@ -774,6 +857,28 @@
     justify-content: center;
     gap: 16px;
     flex-wrap: wrap;
+  }
+
+  .new-project-btn {
+    background: #0284c7;
+    border: 1px solid #38bdf8;
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+  }
+
+  .new-project-btn:hover {
+    background: #0369a1;
+    box-shadow: 0 6px 16px rgba(2, 132, 199, 0.5);
+    transform: translateY(-1px);
   }
 
   .file-upload-btn {

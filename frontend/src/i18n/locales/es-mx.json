@@ -47,7 +47,11 @@
     "export_gedcom": "Exportar GEDCOM",
     "unsaved_changes": "Cambios sin guardar",
     "saved_successfully": "¡Archivo guardado con éxito!",
-    "save_error": "Error al guardar el archivo."
+    "save_error": "Error al guardar el archivo.",
+    "new_project": "Nuevo Árbol",
+    "new_project_desc": "Comenzar un árbol genealógico nuevo",
+    "close_file": "Cerrar Archivo",
+    "confirm_unsaved_discard": "Tienes cambios sin guardar. ¿Estás seguro de que deseas cerrar sin guardar?"
   },
   "footer": {
     "github_page": "Repositorio GitHub",
